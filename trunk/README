@@ -1,0 +1,27 @@
+Type make to compile the ift1.0 library
+
+In demo you will find several subdirectories. Type make followed by
+the basename of the program to compile each program. Example:
+
+cd demo/watershed
+make watershed
+
+By typing the name of the program, you will see its usage. Example:
+
+watershed
+
+In this case, the correct usage is
+
+watershed flower.pgm flower_grad.pgm flower-seeds.txt
+
+All directories come with image files and other information, and
+needed, to execute the programs. Enjoy. The algorithms are following
+the lectures in www.ic.unicamp.br/~afalcao/talks
+
+Enjoy it and do not hesitate to ask me help.
+
+Alexandre Falcao.
+
+
+
+
