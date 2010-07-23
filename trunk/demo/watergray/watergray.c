@@ -103,7 +103,7 @@ int main(int argc, char **argv)
   // A grayscale marker can be created by any extensive operation:
   // A value H may be added to eliminate irrelevant basins, for instance. 
 
-  marker = AddValue(grad,100);
+  marker = AddValue(grad,50);
 
   // Watershed from grayscale marker
 
