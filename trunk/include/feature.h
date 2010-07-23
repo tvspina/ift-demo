@@ -27,6 +27,7 @@ void DestroyFeatures(Features **f);
 Features* CopyFeatures(Features* feat);
 
 // using convolution with gaussian filters
-Features *LMSImageFeats(Image *img, int nscales);
+Features *GaussImageFeats(Image *img, int nscales);
+Features *GaussCImageFeats(CImage *cimg, int nscales);
 
 #endif // _FEATURE_H_

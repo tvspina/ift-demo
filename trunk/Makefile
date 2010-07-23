@@ -26,6 +26,7 @@ $(OBJ)/subgraph.o \
 $(OBJ)/color.o \
 $(OBJ)/feature.o \
 $(OBJ)/cimage.o \
+$(OBJ)/dimage.o \
 $(OBJ)/adjacency.o \
 $(OBJ)/gqueue.o \
 
@@ -39,6 +40,7 @@ $(OBJ)/subgraph.o \
 $(OBJ)/color.o \
 $(OBJ)/feature.o \
 $(OBJ)/cimage.o \
+$(OBJ)/dimage.o \
 $(OBJ)/adjacency.o \
 $(OBJ)/gqueue.o \
 
@@ -57,6 +59,9 @@ $(OBJ)/image.o: $(SRC)/image.c
 
 $(OBJ)/cimage.o: $(SRC)/cimage.c
 	gcc $(FLAGS) -c $(SRC)/cimage.c $(INCLUDES) -o $(OBJ)/cimage.o
+
+$(OBJ)/dimage.o: $(SRC)/dimage.c
+	gcc $(FLAGS) -c $(SRC)/dimage.c $(INCLUDES) -o $(OBJ)/dimage.o
 
 $(OBJ)/adjacency.o: $(SRC)/adjacency.c
 	gcc $(FLAGS) -c $(SRC)/adjacency.c $(INCLUDES) -o $(OBJ)/adjacency.o

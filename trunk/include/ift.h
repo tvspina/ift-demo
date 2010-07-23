@@ -6,6 +6,7 @@
 #include "set.h"
 #include "image.h"
 #include "cimage.h"
+#include "dimage.h"
 #include "adjacency.h"
 #include "gqueue.h"
 #include "subgraph.h"

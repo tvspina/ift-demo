@@ -14,7 +14,7 @@ $(LIB)/libift.a:
 
 
  $@.c: $(LIB)/libift.a $@.c 
-	 gcc $(FLAGS) $@.c -o $(BIN)/$@ $(INCLUDES) -L$(LIB) -lift -lm ; 
+	 gcc $(FLAGS) $@.c -o $(BIN)/$@ $(INCLUDES) -L$(LIB) -lift -lm
 
 
 
