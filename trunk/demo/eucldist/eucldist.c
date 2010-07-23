@@ -116,8 +116,9 @@ Forest *DistTrans(Image *I)
 
 int main(int argc, char **argv)
 {
+  int p;
   timer    *t1=NULL,*t2=NULL;
-  Image    *img,*aux;
+  Image    *img,*aux, *sqrt_tde;
   Forest   *tde;
   /* The following block must the remarked when using non-linux machines */
 
@@ -155,10 +156,16 @@ int main(int argc, char **argv)
 
   fprintf(stdout,"Euclidian Distance Transform in %f ms\n",CTime(t1,t2));
 
-  WriteImage(tde->V,"tde.pgm");
+  sqrt_tde = CreateImage(img->ncols, img->nrows);
+  for(p = 0; p < img->ncols*img->nrows;p++)
+    sqrt_tde->val[p] = (int)sqrtf(tde->V->val[p]);
+
+  WriteImage(sqrt_tde,"tde.pgm");
+  WriteImage(tde->V,"tde2.pgm");
 
   DestroyForest(&tde);
   DestroyImage(&img);
+  DestroyImage(&sqrt_tde);
 
   /* The following block must the remarked when using non-linux machines */
 

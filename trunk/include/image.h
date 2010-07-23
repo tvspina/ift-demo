@@ -17,6 +17,7 @@ Image  *CreateImage(int ncols,int nrows);
 void    DestroyImage(Image **img);
 Image  *ReadImage(char *filename);
 void    WriteImage(Image *img, char *filename);
+Image  *CopyImage(Image *img);
 
 int     MinimumValue(Image *img);
 int     MaximumValue(Image *img);
