@@ -20,6 +20,8 @@ void ReadSeeds(char *filename, Set **Obj, Set **Bkg)
   fclose(fp);
 }
 
+/* Morphology functions */
+
 Image *Dilate(Image *img, AdjRel *A)
 {
   Image *dil=CreateImage(img->ncols,img->nrows);
@@ -87,8 +89,6 @@ Image *Close(Image *img, AdjRel *A)
 
   return(close);
 }
-
-
 
 // Inferior Reconstruction img >= marker without marker imposition
 
@@ -232,6 +232,8 @@ Image *CloseHoles(Image *img)
   return(cimg);
 }
 
+/* Functions to create Subgraphs for OPF */
+
 void SetSubgraphFeatures(Subgraph *sg, Features *f)
 {
     int i,j;
@@ -369,6 +371,7 @@ void SplitSubgraph(Subgraph *sg, Subgraph **sg1, Subgraph **sg2, float perc1)
     free(nelems);
 }
 
+/* OPF-related functions */
 
 // Compute Euclidean distance between feature vectors
 float EuclDist(float *f1, float *f2, int n)
@@ -726,12 +729,10 @@ Image* OPFClassifyImage(Subgraph *sgtrain, Features* feat)
     return result;
 }
 
-
-
 int main(int argc, char **argv) 
 {
   timer    *t1=NULL,*t2=NULL;
-  Image    *img=NULL,*label=NULL, *final_label=NULL, *ch_label=NULL;
+  Image    *label=NULL, *final_label=NULL, *ch_label=NULL;
   Features *feat=NULL;
   Subgraph *sg=NULL, *sgtrain=NULL, *sgeval=NULL;
   Set      *Obj=NULL,*Bkg=NULL;
@@ -749,18 +750,30 @@ int main(int argc, char **argv)
   /*--------------------------------------------------------*/
 
   if (argc!=3){
-    fprintf(stderr,"Usage: classify <image.pgm>  <seeds.txt>\n");
+    fprintf(stderr,"Usage: classify <image.pgm (.ppm)>  <seeds.txt>\n");
     fprintf(stderr,"image.pgm: image to be classified\n");
     fprintf(stderr,"seeds.txt: seed pixels\n");
     exit(-1);
   }
 
-  A = Circular(2);
+  char *ext = strrchr(argv[1],'.');
 
-  img   = ReadImage(argv[1]);
+  if(!strcmp(ext,".pgm"))
+  {
+    Image   *img=NULL;
+    img   = ReadImage(argv[1]);
+    feat = GaussImageFeats(img, 2);
+    DestroyImage(&img);  
+  }else{
+    CImage   *cimg=NULL;
+    cimg   = ReadCImage(argv[1]);
+    feat = GaussCImageFeats(cimg, 2);
+    DestroyCImage(&cimg);
+  }
+
+  A = Circular(2);
   ReadSeeds(argv[2],&Obj,&Bkg);
-  
-  feat = LMSImageFeats(img, 2);
+
   sg = SubgraphFromSeeds(feat,Obj,Bkg);
   SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
   
@@ -774,10 +787,9 @@ int main(int argc, char **argv)
   
   t2 = Toc();    
 
-  fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
+  fprintf(stdout,"Classification and post-processing time in %f ms\n",CTime(t1,t2));
   WriteImage(final_label,"label.pgm");    
 
-  DestroyImage(&img);  
   DestroyImage(&label);  
   DestroyImage(&final_label);  
   DestroyImage(&ch_label);  

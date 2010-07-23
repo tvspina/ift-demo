@@ -2,48 +2,36 @@
 
 #define MAXGRAD 255
 
-Image* InvertValues(Image* img)
+// Sigmoidal rescaling of values. Max, min, beta and alpha must be in the same range
+DImage* SigmoidalStretch(DImage* img, double thresh, double max, double min, double beta, double alpha)
 {
-  const int maxval = MaximumValue(img);
   int p;
-  Image* result = CreateImage(img->ncols, img->nrows);
-  
-  for(p = 0; p < img->ncols*img->nrows; p++)
-    result->val[p] = maxval-img->val[p];
-
-  return result;
-}
-
-Image* SigmoidalStretch(Image* img, int thresh, int gain, double cutoff)
-{
-  const int maxval = MaximumValue(img);
-  const int minval = MinimumValue(img);
-  int p;
-  Image* result = CreateImage(img->ncols, img->nrows);
+  DImage* result = CreateDImage(img->ncols, img->nrows);
 
   for(p = 0; p < img->ncols*img->nrows; p++)
     {
       if(img->val[p] < -thresh) 
-    	result->val[p] = 0;
+    	result->val[p] = 0.0;
       else if(img->val[p] > thresh) 
-	result->val[p] = maxval;
+	result->val[p] = 1.0;
       else
-	result->val[p] = (int)((double)maxval/(1 + exp(gain*((double)(img->val[p]-minval)/(double)(maxval-minval)-cutoff))));
+	result->val[p] = (max - min)/(1.0 + exp(-(img->val[p] - beta)/alpha)) + min;
     }
   return result;
 }
 
-Image *ObjectGradient(Image *img, float radius)
+// Object-based gradient computation
+Image *ObjectGradient(DImage *img, float radius)
 {
     real    dist,gx,gy;
-    int     i,p,q,n=img->ncols*img->nrows,Imax;
+    int     i,p,q,n=img->ncols*img->nrows;
     Pixel   u,v;
     AdjRel *A=Circular(radius);
     real   *md=AllocRealArray(A->n);
 
     Image* grad = CreateImage(img->ncols, img->nrows);
 
-    Imax = MaximumValue(img);
+    double Imax = MaximumDImageValue(img);
 
     for (i=1; i < A->n; i++)
         md[i]=sqrt(A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i]);
@@ -59,10 +47,10 @@ Image *ObjectGradient(Image *img, float radius)
         {
             v.x = u.x + A->dx[i];
             v.y = u.y + A->dy[i];
-            if (ValidPixel(img,v.x,v.y))
+            if (ValidDImagePixel(img,v.x,v.y))
             {
                 q    = v.x + img->tbrow[v.y];
-                dist = ((float)img->val[q]-(float)img->val[p])/(float)Imax;
+                dist = ((float)img->val[q]-(float)img->val[p])/Imax;
 
                 gx  += dist*A->dx[i]/md[i];
                 gy  += dist*A->dy[i]/md[i];
@@ -77,6 +65,7 @@ Image *ObjectGradient(Image *img, float radius)
     return(grad);
 }
 
+// Image-based gradient computation
 Image *FeaturesGradient(Features *f,float radius)
 {
     real    dist,gx,gy,mag;
@@ -125,6 +114,7 @@ Image *FeaturesGradient(Features *f,float radius)
     return(grad);
 }
 
+// Linear combination of gradients
 Image* CombineGradients(Image *objgrad, Image *imggrad, float wobj)
 {
   int p;
@@ -135,6 +125,8 @@ Image* CombineGradients(Image *objgrad, Image *imggrad, float wobj)
 
   return grad;
 }
+
+/* Morphology functions */
 
 Image *Dilate(Image *img, AdjRel *A)
 {
@@ -320,7 +312,7 @@ Image *OpenRec(Image *I, AdjRel *A)
   return(K);
 }
 
-
+// Morphological extraction of image features 
 Features *MorphImageFeats(Image *img, int nscales)
 {
     Features *f=CreateFeatures(img->ncols,img->nrows,nscales);
@@ -348,59 +340,57 @@ Features *MorphImageFeats(Image *img, int nscales)
     return(f);
 }
 
-// Creates Empty Forest
-
-typedef struct _forest {
-  Image *P; // predecessor map
-  Image *R; // root map
-  Image *V; // distance (cost or connectivity) map
-} Forest;
-
-Forest *CreateForest(int ncols, int nrows)
+Features *MorphCImageFeats(CImage *cimg, int nscales)
 {
-  Forest *F=(Forest *)calloc(1,sizeof(Forest));
+    Features *f=CreateFeatures(cimg->C[0]->ncols,cimg->C[0]->nrows,3*nscales);
+    AdjRel   *A=NULL;
+    int       s,i,j;
+    Image    *img=NULL, *open=NULL;
 
-  F->P = CreateImage(ncols,nrows);
-  F->R = CreateImage(ncols,nrows);
-  F->V = CreateImage(ncols,nrows);
+    f->Imax = MAX(MAX(MaximumValue(cimg->C[0]),MaximumValue(cimg->C[1])),MaximumValue(cimg->C[2]));
 
-  return(F);
+    for (j=0; j < 3; j=j+1)
+    {
+        for (s=1; s <= nscales; s=s+1)
+        {
+            A   = Circular(s);
+	    open = OpenRec(cimg->C[j],A);
+	    img = CloseRec(open,A);
+
+            for (i=0; i < f->nelems; i++)
+            {
+                f->elem[i].feat[s-1+(j*nscales)] = (float)img->val[i]/f->Imax;
+            }
+            DestroyImage(&img);
+            DestroyImage(&open);
+            DestroyAdjRel(&A);
+        }
+    }
+    return(f);
 }
-
-// Destroys Forest
-
-void DestroyForest(Forest **F)
-{
-  Forest *tmp=*F;
-
-  if (tmp != NULL) {
-    DestroyImage(&(tmp->P));
-    DestroyImage(&(tmp->R));
-    DestroyImage(&(tmp->V));
-    free(tmp);
-    *F = NULL;
-  }
-}
-
 
 // Euclidean distance transform
 
-Forest *DistTrans(Image *B, Image *I) 
+DImage *DistTrans(Image *B, Image *I) 
 {
   int p,q,n=B->ncols*B->nrows,i,tmp;
   Pixel u,v,w;
   AdjRel *A=Circular(1.5),*A4=Circular(1.0);
-  Forest *F=CreateForest(B->ncols,B->nrows);
-  GQueue *Q=CreateGQueue(1024,n,F->V->val);
-  
+  Image* P = CreateImage(I->ncols,I->nrows);
+  Image* R = CreateImage(I->ncols,I->nrows);
+  Image* V = CreateImage(I->ncols,I->nrows);
+  DImage* tde = CreateDImage(I->ncols,I->nrows);
+
+  GQueue *Q=CreateGQueue(1024,n,V->val);
+
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
     u.x = p % B->ncols;
     u.y = p / B->ncols;
-    F->V->val[p]=INT_MAX; F->R->val[p]=p; F->P->val[p]=NIL;
+    V->val[p]=INT_MAX; R->val[p]=p; P->val[p]=NIL;
     if (B->val[p]!=0){ // p belongs to an object's border
-      F->V->val[p]=0;
+      V->val[p]=0;
       InsertGQueue(&Q,p);
     }
   }
@@ -411,36 +401,42 @@ Forest *DistTrans(Image *B, Image *I)
     p = RemoveGQueue(Q);
     u.x = p % B->ncols;
     u.y = p / B->ncols;
-    w.x = F->R->val[p] % B->ncols;
-    w.y = F->R->val[p] / B->ncols;
+    w.x = R->val[p] % B->ncols;
+    w.y = R->val[p] / B->ncols;
     for (i=1; i < A->n; i++) {
       v.x = u.x + A->dx[i];
       v.y = u.y + A->dy[i];
       if (ValidPixel(B,v.x,v.y)){
 	q   = v.x + B->tbrow[v.y];
-	if (F->V->val[q]>F->V->val[p]){	    
+	if (V->val[q]>V->val[p]){	    
 	  tmp = (v.x-w.x)*(v.x-w.x)+(v.y-w.y)*(v.y-w.y);
-	  if (tmp < F->V->val[q]){
-	    if (F->V->val[q]!=INT_MAX) RemoveGQueueElem(Q, q);
-	    F->V->val[q]=tmp; F->R->val[q]=F->R->val[p]; F->P->val[q]=p;
+	  if (tmp < V->val[q]){
+	    if (V->val[q]!=INT_MAX) RemoveGQueueElem(Q, q);
+	    V->val[q]=tmp; R->val[q]=R->val[p]; P->val[q]=p;
 	    InsertGQueue(&Q,q);
 	  }
 	}
       }
     }
   }
+
   for(p = 0; p < I->ncols*I->nrows; p++)
     {
-      F->V->val[p] = (int)sqrt((double)F->V->val[p]);
-      if(I->val[p] == 0) F->V->val[p] = -F->V->val[p];
+      tde->val[p] = sqrt((double)V->val[p]);
+      if(I->val[p] == 0) tde->val[p] = -tde->val[p];
     }
+
   DestroyGQueue(&Q);
   DestroyAdjRel(&A);
   DestroyAdjRel(&A4);
+  DestroyImage(&P);
+  DestroyImage(&V);
+  DestroyImage(&R);
 
-  return(F);
+  return tde;
 }
 
+// Extracts the boundary of an image
 Image *Boundary(Image *bin)
 {
   Image *bndr=NULL;
@@ -482,10 +478,10 @@ int main(int argc, char **argv)
 {
   float wobj = 0.5;
   timer    *t1=NULL,*t2=NULL;
-  Image    *img=NULL, *bndr=NULL, *label=NULL, *objmap=NULL;
-  Image    *objgrad=NULL, *imggrad=NULL, *grad=NULL;
+  Image    *bndr=NULL, *label=NULL;
+  Image    *objgrad=NULL, *imggrad=NULL, *grad=NULL, *tmp=NULL;
   Features *feat=NULL;
-  Forest   *tde=NULL;
+  DImage   *tde=NULL, *objmap=NULL;
 
   /* The following block must the remarked when using non-linux machines */
 
@@ -499,11 +495,26 @@ int main(int argc, char **argv)
   /*----------------------------------------------------------------------*/
   
   if (argc != 4) {
-    printf("Usage: %s <image.pgm> <label.pgm> <wobj [0,1]>\n",argv[0]);
+    printf("Usage: %s <image.pgm (.ppm)> <label.pgm> <wobj [0,1]>\n",argv[0]);
     exit(0);
   }
 
-  img = ReadImage(argv[1]);
+
+  char *ext = strrchr(argv[1],'.');
+
+  if(!strcmp(ext,".pgm"))
+  {
+    Image   *img=NULL;
+    img   = ReadImage(argv[1]);
+    feat = MorphImageFeats(img, 2);
+    DestroyImage(&img);  
+  }else{
+    CImage   *cimg=NULL;
+    cimg   = ReadCImage(argv[1]);
+    feat = MorphCImageFeats(cimg, 2);
+    DestroyCImage(&cimg);
+  }
+
   label = ReadImage(argv[2]);
   wobj = atof(argv[3]);
 
@@ -512,11 +523,12 @@ int main(int argc, char **argv)
   /* computing object gradient */
   bndr = Boundary(label);
   tde = DistTrans(bndr,label);
-  objmap = SigmoidalStretch(tde->V, 5, -7, 0.35);
+  //thresh = 10, max = 1, min = 0.0, beta = 0.0 (TDE has value 0.0 on the boundary), 
+  //alpha = 0.8
+  objmap = SigmoidalStretch(tde, 10, 1.0, 0.0, 0.0, 0.8); 
   objgrad = ObjectGradient(objmap,1.5);
   
   /* computing image gradient */
-  feat = MorphImageFeats(img,2);
   imggrad = FeaturesGradient(feat, 1.5);
 
   /* combining gradients */
@@ -525,18 +537,23 @@ int main(int argc, char **argv)
   t2 = Toc();
 
   fprintf(stdout,"Gradient computing in %f ms\n",CTime(t1,t2));
-  WriteImage(bndr,"boundary.pgm");
-  WriteImage(tde->V,"tde.pgm");
-  WriteImage(objmap,"objmap.pgm");
+  
+  tmp = ConvertDImage2Image(tde);
+  WriteImage(tmp,"tde.pgm");
+  DestroyImage(&tmp);
+  
+  tmp = ConvertDImage2Image(objmap);
+  WriteImage(tmp,"objmap.pgm");
+  DestroyImage(&tmp);
+  
   WriteImage(objgrad,"objgrad.pgm");
   WriteImage(imggrad,"imggrad.pgm");
   WriteImage(grad,"grad.pgm");
   
-  DestroyForest(&tde);
+  DestroyDImage(&tde);
   DestroyImage(&bndr);
-  DestroyImage(&img);
   DestroyImage(&label);
-  DestroyImage(&objmap);
+  DestroyDImage(&objmap);
   DestroyImage(&imggrad);
   DestroyImage(&objgrad);
   DestroyImage(&grad);
