@@ -146,6 +146,17 @@ void WriteImage(Image *img,char *filename)
 
 }
 
+
+Image  *CopyImage(Image *img)
+{
+    Image *imgc;
+
+    imgc = CreateImage(img->ncols,img->nrows);
+    memcpy(imgc->val,img->val,img->ncols*img->nrows*sizeof(int));
+
+    return(imgc);
+}
+
 int MinimumValue(Image *img)
 {
     int i,min,n;

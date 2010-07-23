@@ -20,6 +20,218 @@ void ReadSeeds(char *filename, Set **Obj, Set **Bkg)
   fclose(fp);
 }
 
+Image *Dilate(Image *img, AdjRel *A)
+{
+  Image *dil=CreateImage(img->ncols,img->nrows);
+  int p,q,i;
+  Pixel u,v;
+
+  for (u.y=0; u.y < img->nrows; u.y++) 
+    for (u.x=0; u.x < img->ncols; u.x++) {
+      p = u.x + img->tbrow[u.y];
+      dil->val[p]=img->val[p];
+      for (i=1; i < A->n; i++) {
+	v.x = u.x + A->dx[i];
+	v.y = u.y + A->dy[i];
+	if (ValidPixel(dil,v.x,v.y)){
+	  q = v.x + img->tbrow[v.y];
+	  if (img->val[q]>dil->val[p])
+	    dil->val[p]=img->val[q];
+	}
+      }
+    }
+  return(dil);
+}
+
+Image *Erode(Image *img, AdjRel *A)
+{
+  Image *ero=CreateImage(img->ncols,img->nrows);
+  int p,q,i;
+  Pixel u,v;
+
+  for (u.y=0; u.y < img->nrows; u.y++) 
+    for (u.x=0; u.x < img->ncols; u.x++) {
+      p = u.x + img->tbrow[u.y];
+      ero->val[p]=img->val[p];
+      for (i=1; i < A->n; i++) {
+	v.x = u.x + A->dx[i];
+	v.y = u.y + A->dy[i];
+	if (ValidPixel(ero,v.x,v.y)){
+	  q = v.x + img->tbrow[v.y];
+	  if (img->val[q]<ero->val[p])
+	    ero->val[p]=img->val[q];
+	}
+      }
+    }
+  return(ero);
+}
+
+Image *Open(Image *img, AdjRel *A)
+{
+  Image *open=NULL,*ero=NULL;
+
+  ero  = Erode(img,A);
+  open = Dilate(ero,A);
+  DestroyImage(&ero);
+
+  return(open);
+}
+
+Image *Close(Image *img, AdjRel *A)
+{
+  Image *close=NULL,*dil=NULL;
+
+  dil   = Dilate(img,A);
+  close = Erode(dil,A);
+  DestroyImage(&dil);
+
+  return(close);
+}
+
+
+
+// Inferior Reconstruction img >= marker without marker imposition
+
+Image *SupRec(Image *img, Image *marker)
+{
+  Image *cost=NULL;
+  GQueue *Q=NULL;
+  int i,p,q,tmp,n;
+  Pixel u,v;
+  AdjRel *A=Circular(1.0);
+
+  n     = img->ncols*img->nrows;
+  cost  = CreateImage(img->ncols,img->nrows);
+  Q     = CreateGQueue(MaximumValue(marker)+1,n,cost->val);
+
+  // Trivial path initialization
+
+  for (p=0; p < n; p++) {
+    cost->val[p]=marker->val[p]; 
+    InsertGQueue(&Q,p);
+  }
+
+  // Path propagation 
+
+  while(!EmptyGQueue(Q)) {
+    p=RemoveGQueue(Q);
+    u.x = p%img->ncols;
+    u.y = p/img->ncols;
+    for (i=1; i < A->n; i++){
+      v.x = u.x + A->dx[i];
+      v.y = u.y + A->dy[i];
+      if (ValidPixel(img,v.x,v.y)){
+	q = v.x + img->tbrow[v.y];
+	if (cost->val[q] > cost->val[p]){
+	  tmp = MAX(cost->val[p],img->val[q]);
+	  if (tmp < cost->val[q]){
+	    RemoveGQueueElem(Q,q);
+	    cost->val[q]  = tmp;
+	    InsertGQueue(&Q,q);
+	  }
+	}
+      }
+    }
+  }
+  DestroyGQueue(&Q);
+  DestroyAdjRel(&A);
+  return(cost);
+}
+
+Image *InfRec(Image *img, Image *marker)
+{
+  Image *cost=NULL;
+  GQueue *Q=NULL;
+  int i,p,q,tmp,n;
+  Pixel u,v;
+  AdjRel *A=Circular(1.0);
+
+  n     = img->ncols*img->nrows;
+  cost  = CreateImage(img->ncols,img->nrows);
+  Q     = CreateGQueue(MaximumValue(img)+1,n,cost->val);
+  SetRemovalPolicy(Q,MAXVALUE); 
+
+  // Trivial path initialization
+
+  for (p=0; p < n; p++) {
+    cost->val[p]=marker->val[p]; 
+    InsertGQueue(&Q,p);
+  }
+
+  // Path propagation 
+
+  while(!EmptyGQueue(Q)) {
+    p=RemoveGQueue(Q);
+    u.x = p%img->ncols;
+    u.y = p/img->ncols;
+    for (i=1; i < A->n; i++){
+      v.x = u.x + A->dx[i];
+      v.y = u.y + A->dy[i];
+      if (ValidPixel(img,v.x,v.y)){
+	q = v.x + img->tbrow[v.y];
+	if (cost->val[q] < cost->val[p]){
+	  tmp = MIN(cost->val[p],img->val[q]);
+	  if (tmp > cost->val[q]){
+	    RemoveGQueueElem(Q,q);
+	    cost->val[q]  = tmp;
+	    InsertGQueue(&Q,q);
+	  }
+	}
+      }
+    }
+  }
+  DestroyGQueue(&Q);
+  DestroyAdjRel(&A);
+
+  return(cost);
+}
+
+
+Image *CloseRec(Image *I, AdjRel *A)
+{
+  Image *J,*K;
+
+  J = Close(I,A);
+  K = SupRec(I,J);
+  DestroyImage(&J);
+  return(K);
+}
+
+Image *OpenRec(Image *I, AdjRel *A)
+{
+  Image *J,*K;
+
+  J = Open(I,A);
+  K = InfRec(I,J);
+  DestroyImage(&J);
+  return(K);
+}
+
+Image *CloseHoles(Image *img)
+{
+  Image *marker=NULL,*cimg=NULL;
+  int x,y,i,j,Imax;
+  
+  Imax   = MaximumValue(img);
+  marker   = CreateImage(img->ncols,img->nrows);
+  SetImage(marker,Imax+1);
+  for (y=0; y < marker->nrows; y++) {
+    i = marker->tbrow[y]; j = marker->ncols-1+marker->tbrow[y];
+    marker->val[i] = img->val[i];
+    marker->val[j] = img->val[j];
+  }
+  for (x=0; x < marker->ncols; x++) {
+    i = x+marker->tbrow[0]; j = x+marker->tbrow[marker->nrows-1];
+    marker->val[i] = img->val[i];
+    marker->val[j] = img->val[j];
+  }
+  cimg   = SupRec(img,marker);
+  DestroyImage(&marker);
+
+
+  return(cimg);
+}
+
 void SetSubgraphFeatures(Subgraph *sg, Features *f)
 {
     int i,j;
@@ -519,11 +731,11 @@ Image* OPFClassifyImage(Subgraph *sgtrain, Features* feat)
 int main(int argc, char **argv) 
 {
   timer    *t1=NULL,*t2=NULL;
-  Image    *img=NULL;
-  Image    *label=NULL;
+  Image    *img=NULL,*label=NULL, *final_label=NULL, *ch_label=NULL;
   Features *feat=NULL;
   Subgraph *sg=NULL, *sgtrain=NULL, *sgeval=NULL;
   Set      *Obj=NULL,*Bkg=NULL;
+  AdjRel   *A=NULL;
 
   /*--------------------------------------------------------*/
 
@@ -543,6 +755,8 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+  A = Circular(2);
+
   img   = ReadImage(argv[1]);
   ReadSeeds(argv[2],&Obj,&Bkg);
   
@@ -554,20 +768,27 @@ int main(int argc, char **argv)
 
   OPFLearning(&sgtrain, &sgeval);
   label = OPFClassifyImage(sgtrain, feat);
+  //eliminating noise
+  ch_label = CloseHoles(label);
+  final_label = OpenRec(ch_label,A);
   
   t2 = Toc();    
 
   fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
-  WriteImage(label,"label.pgm");    
+  WriteImage(final_label,"label.pgm");    
 
   DestroyImage(&img);  
   DestroyImage(&label);  
+  DestroyImage(&final_label);  
+  DestroyImage(&ch_label);  
   DestroySubgraph(&sg);
   DestroySubgraph(&sgtrain);
   DestroySubgraph(&sgeval);
   DestroySet(&Obj);
   DestroySet(&Bkg);
   DestroyFeatures(&feat);
+  DestroyAdjRel(&A);
+
   /* ---------------------------------------------------------- */
 
   info = mallinfo();
