@@ -26,6 +26,8 @@ bool    ValidPixel(Image *img, int x, int y);
 Image  *AddFrame(Image *img, int sz, int value);
 Image  *RemFrame(Image *fimg, int sz);
 
+Image *Threshold(Image *img, int lower, int higher);
+
 #endif
 
 

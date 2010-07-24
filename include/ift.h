@@ -12,6 +12,8 @@
 #include "subgraph.h"
 #include "feature.h"
 #include "realheap.h"
-
+#include "morphology.h"
+#include "opf.h"
+#include "seeds.h"
 
 #endif

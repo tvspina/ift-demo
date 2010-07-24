@@ -25,8 +25,11 @@ $(OBJ)/realheap.o \
 $(OBJ)/subgraph.o \
 $(OBJ)/color.o \
 $(OBJ)/feature.o \
+$(OBJ)/opf.o \
+$(OBJ)/morphology.o \
 $(OBJ)/cimage.o \
 $(OBJ)/dimage.o \
+$(OBJ)/seeds.o \
 $(OBJ)/adjacency.o \
 $(OBJ)/gqueue.o \
 
@@ -39,8 +42,11 @@ $(OBJ)/realheap.o \
 $(OBJ)/subgraph.o \
 $(OBJ)/color.o \
 $(OBJ)/feature.o \
+$(OBJ)/opf.o \
+$(OBJ)/morphology.o \
 $(OBJ)/cimage.o \
 $(OBJ)/dimage.o \
+$(OBJ)/seeds.o \
 $(OBJ)/adjacency.o \
 $(OBJ)/gqueue.o \
 
@@ -63,6 +69,9 @@ $(OBJ)/cimage.o: $(SRC)/cimage.c
 $(OBJ)/dimage.o: $(SRC)/dimage.c
 	gcc $(FLAGS) -c $(SRC)/dimage.c $(INCLUDES) -o $(OBJ)/dimage.o
 
+$(OBJ)/seeds.o: $(SRC)/seeds.c
+	gcc $(FLAGS) -c $(SRC)/seeds.c $(INCLUDES) -o $(OBJ)/seeds.o
+
 $(OBJ)/adjacency.o: $(SRC)/adjacency.c
 	gcc $(FLAGS) -c $(SRC)/adjacency.c $(INCLUDES) -o $(OBJ)/adjacency.o
 
@@ -77,6 +86,12 @@ $(OBJ)/subgraph.o: $(SRC)/subgraph.c
 
 $(OBJ)/feature.o: $(SRC)/feature.c
 	gcc $(FLAGS) -c $(SRC)/feature.c $(INCLUDES) -o $(OBJ)/feature.o
+
+$(OBJ)/morphology.o: $(SRC)/morphology.c
+	gcc $(FLAGS) -c $(SRC)/morphology.c $(INCLUDES) -o $(OBJ)/morphology.o
+
+$(OBJ)/opf.o: $(SRC)/opf.c
+	gcc $(FLAGS) -c $(SRC)/opf.c $(INCLUDES) -o $(OBJ)/opf.o
 
 $(OBJ)/color.o: $(SRC)/color.c
 	gcc $(FLAGS) -c $(SRC)/color.c $(INCLUDES) -o $(OBJ)/color.o

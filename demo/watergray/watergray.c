@@ -78,7 +78,8 @@ int main(int argc, char **argv)
   Image    *label=NULL;
   CImage   *cimg=NULL;
   AdjRel   *A=NULL;
-
+  char     outfile[100];
+  char     *file_noext;
   /*--------------------------------------------------------*/
 
   void *trash = malloc(1);                 
@@ -90,20 +91,23 @@ int main(int argc, char **argv)
 
   /*--------------------------------------------------------*/
 
-  if (argc!=3){
-    fprintf(stderr,"Usage: watergray <image.pgm> <gradient.pgm>\n");
+  if (argc!=4){
+    fprintf(stderr,"Usage: watergray <image.pgm> <gradient.pgm> <H>\n");
     fprintf(stderr,"image.pgm: grayscale image to overlay the watershed lines on it\n"); 
     fprintf(stderr,"gradient.pgm: gradient image to compute the watershed segmentation\n"); 
+    fprintf(stderr,"H: an integer that will be added to the gradient to eliminate irrelevant basins (typically <= 100)\n"); 
     exit(-1);
   }
  
   img    = ReadImage(argv[1]);
   grad   = ReadImage(argv[2]);
 
+  file_noext = strtok(argv[1],".");
+
   // A grayscale marker can be created by any extensive operation:
   // A value H may be added to eliminate irrelevant basins, for instance. 
 
-  marker = AddValue(grad,50);
+  marker = AddValue(grad,atoi(argv[3]));
 
   // Watershed from grayscale marker
 
@@ -117,11 +121,11 @@ int main(int argc, char **argv)
   
   fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
 
-
   // Draw watershed lines
 
   cimg = DrawLabeledRegions(img,label);
-  WriteCImage(cimg,"result.ppm");    
+  sprintf(outfile,"%s_result.ppm",file_noext);
+  WriteCImage(cimg,outfile);    
   DestroyImage(&grad);  
   DestroyImage(&img);  
   DestroyImage(&marker);  
