@@ -43,23 +43,6 @@ bool ValidContPoint(Image *bin, AdjRel *L, AdjRel *R, int p)
   return(found);
 }
 
-// Binarization used when the input image is not 0/1
-
-Image *Threshold(Image *img, int lower, int higher)
-{
-  Image *bin=NULL;
-  int p,n;
-
-  bin = CreateImage(img->ncols,img->nrows);
-  n = img->ncols*img->nrows;
-  for (p=0; p < n; p++)
-    if ((img->val[p] >= lower)&&(img->val[p] <= higher))
-      bin->val[p]=1;
-  return(bin);
-}
-
-
-
 // Creates Empty Forest
 
 typedef struct _forest {
@@ -489,7 +472,8 @@ int main(int argc, char **argv)
   timer    *t1=NULL,*t2=NULL;
   Image    *img,*msskel,*skel,*aux;
   int       maxval;
-
+  char   outfile[100];
+  char   *file_noext;
   /* The following block must the remarked when using non-linux machines */
 
   void *trash = malloc(1);                 
@@ -502,11 +486,13 @@ int main(int argc, char **argv)
   /*----------------------------------------------------------------------*/
   
   if (argc != 2) {
-    printf("Usage: msskels <image.pgm>\n");
+    printf("Usage: %s <image.pgm>\n",argv[0]);
+    printf("image.pgm: binary image for which a multiscale skeleton will be computed\n");
     exit(0);
   }
-
+  
   aux = ReadImage(argv[1]);
+  file_noext = strtok(argv[1],".");
 
   if (MaximumValue(aux)!=1){
     fprintf(stderr,"Input image must be binary with values 0/1 \n");
@@ -526,20 +512,24 @@ int main(int argc, char **argv)
 
   fprintf(stdout,"Skeletonization in %f ms\n",CTime(t1,t2));
 
-  WriteImage(msskel,"msskel.pgm");
-
+  sprintf(outfile,"%s_msskel.pgm",file_noext);
+  WriteImage(msskel,outfile);
+  
   maxval = MaximumValue(msskel);
 
   skel = Threshold(msskel,(int)(0.05*maxval),maxval);
-  WriteImage(skel,"skel-a.pgm");
+  sprintf(outfile,"%s_skel-a.pgm",file_noext);
+  WriteImage(skel,outfile);
   DestroyImage(&skel);
 
   skel = Threshold(msskel,(int)(0.35*maxval),maxval);
-  WriteImage(skel,"skel-b.pgm");
+  sprintf(outfile,"%s_skel-b.pgm",file_noext);
+  WriteImage(skel,outfile);
   DestroyImage(&skel);
 
   skel = Threshold(msskel,(int)(0.75*maxval),maxval);
-  WriteImage(skel,"skel-c.pgm");
+  sprintf(outfile,"%s_skel-c.pgm",file_noext);
+  WriteImage(skel,outfile);
   DestroyImage(&skel);
 
   DestroyImage(&msskel);

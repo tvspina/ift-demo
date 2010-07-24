@@ -250,3 +250,17 @@ Image *RemFrame(Image *fimg, int sz)
     return(img);
 }
 
+
+Image *Threshold(Image *img, int lower, int higher)
+{
+  Image *bin=NULL;
+  int p,n;
+
+  bin = CreateImage(img->ncols,img->nrows);
+  n = img->ncols*img->nrows;
+  for (p=0; p < n; p++)
+    if ((img->val[p] >= lower)&&(img->val[p] <= higher))
+      bin->val[p]=1;
+  return(bin);
+}
+

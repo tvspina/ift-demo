@@ -1,6 +1,5 @@
 #include "ift.h"
 
-
 // Creates Empty Forest
 
 typedef struct _forest {
@@ -34,31 +33,6 @@ void DestroyForest(Forest **F)
     *F = NULL;
   }
 }
-
-Image  *CopyImage(Image *img)
-{
-    Image *imgc;
-
-    imgc = CreateImage(img->ncols,img->nrows);
-    memcpy(imgc->val,img->val,img->ncols*img->nrows*sizeof(int));
-
-    return(imgc);
-}
-
-
-Image *Threshold(Image *img, int lower, int higher)
-{
-  Image *bin=NULL;
-  int p,n;
-
-  bin = CreateImage(img->ncols,img->nrows);
-  n = img->ncols*img->nrows;
-  for (p=0; p < n; p++)
-    if ((img->val[p] >= lower)&&(img->val[p] <= higher))
-      bin->val[p]=1;
-  return(bin);
-}
-
 
 // Euclidean distance transform
 
@@ -117,9 +91,12 @@ Forest *DistTrans(Image *I)
 int main(int argc, char **argv)
 {
   int p;
+  char outfile[100];
+  char *file_noext;
   timer    *t1=NULL,*t2=NULL;
-  Image    *img,*aux, *sqrt_tde;
-  Forest   *tde;
+  Image    *img,*aux, *sqrt_edt;
+  Forest   *edt;
+  
   /* The following block must the remarked when using non-linux machines */
 
   void *trash = malloc(1);                 
@@ -133,10 +110,13 @@ int main(int argc, char **argv)
   
   if (argc != 2) {
     printf("Usage: %s <image.pgm>\n", argv[0]);
+    printf("image.pgm: a binary image for which an Euclidian Distance Transform will be computed\n");
     exit(0);
   }
 
   aux = ReadImage(argv[1]);
+
+  file_noext = strtok(argv[1],".");
 
   if (MaximumValue(aux)!=1){
     fprintf(stderr,"Input image must be binary with values 0/1 \n");
@@ -150,22 +130,23 @@ int main(int argc, char **argv)
     
   t1 = Tic();
 
-  tde = DistTrans(img);
+  edt = DistTrans(img);
 
   t2 = Toc();
 
   fprintf(stdout,"Euclidian Distance Transform in %f ms\n",CTime(t1,t2));
 
-  sqrt_tde = CreateImage(img->ncols, img->nrows);
+  sqrt_edt = CreateImage(img->ncols, img->nrows);
   for(p = 0; p < img->ncols*img->nrows;p++)
-    sqrt_tde->val[p] = (int)sqrtf(tde->V->val[p]);
+    sqrt_edt->val[p] = (int)sqrtf(edt->V->val[p]);
+  
+  sprintf(outfile,"%s_edt.pgm",strtok(argv[1],"."));
 
-  WriteImage(sqrt_tde,"tde.pgm");
-  WriteImage(tde->V,"tde2.pgm");
+  WriteImage(sqrt_edt,outfile);
 
-  DestroyForest(&tde);
+  DestroyForest(&edt);
   DestroyImage(&img);
-  DestroyImage(&sqrt_tde);
+  DestroyImage(&sqrt_edt);
 
   /* The following block must the remarked when using non-linux machines */
 

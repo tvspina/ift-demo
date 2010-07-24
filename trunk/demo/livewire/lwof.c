@@ -52,14 +52,14 @@ void ComputePath(Image *I, Image *V, Image *P, Image *O, GQueue **Q, AdjRel *A, 
   }
 }
 
-void DisplayPath(Image *img, Image *P, int p, int i)
+void DisplayPath(Image *img, Image *P, int p, int i, const char* origfile)
 {
   CImage *cimg=NULL;
   int q,n=img->ncols*img->nrows;
   char filename[200];
 
   if (P->val[p]!=NIL){
-    sprintf(filename,"lwof%03d.ppm",i);
+    sprintf(filename,"%s_lwof%03d.ppm",origfile,i);
     cimg = CreateCImage(img->ncols,img->nrows);
     
     for (q=0; q < n; q++) {
@@ -107,6 +107,7 @@ int main(int argc, char **argv)
   Pixel   u,v;
   FILE   *fp=NULL;
   char    quit=0;
+  char   *file_noext;
 
   /*--------------------------------------------------------*/
 
@@ -132,6 +133,9 @@ int main(int argc, char **argv)
 
 
   I     = ReadImage(argv[1]);
+
+  file_noext = strtok(argv[1],".");
+
   n     = I->ncols*I->nrows;
   G     = ReadImage(argv[2]);
   Gmax  = MaximumValue(G); 
@@ -173,7 +177,7 @@ int main(int argc, char **argv)
 
 	
 	if (curr!=NIL){	
-	  DisplayPath(I,P,p,i); i++;
+	  DisplayPath(I,P,p,i,file_noext); i++;
 	  ResetGQueue(Q);
 	  // mark selected segment as permanent
 	  q = p;
@@ -190,7 +194,7 @@ int main(int argc, char **argv)
       case 2: // compute and display path
 	if (curr!=NIL){
 	  ComputePath(G,V,P,O,&Q,A,L,R,p);
-	  DisplayPath(I,P,p,i); i++;
+	  DisplayPath(I,P,p,i,file_noext); i++;
 	}
 	break;
 	
@@ -215,7 +219,7 @@ int main(int argc, char **argv)
 	  if (V->val[q]!=INT_MIN) V->val[q]=INT_MAX;
 	V->val[curr]=0;	
 	InsertGQueue(&Q,curr);
-	DisplayPath(I,P,curr,i);i++;
+	DisplayPath(I,P,curr,i,file_noext);i++;
 	break;
 
       case 4: // select point, close contour, display and quit
@@ -238,7 +242,7 @@ int main(int argc, char **argv)
 	  P->val[q]=NIL; // new first point
 	  V->val[p]=INT_MAX;
 	  ComputePath(G,V,P,O,&Q,A,L,R,p);
-	  DisplayPath(I,P,p,i); i++;
+	  DisplayPath(I,P,p,i,file_noext); i++;
 	}
 	quit = 1;
        

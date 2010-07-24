@@ -1,22 +1,5 @@
 #include "ift.h"
 
-void ReadSeeds(char *filename, Set **Obj, Set **Bkg)
-{
-  FILE *fp=fopen(filename,"r");
-  int i,x,y,l,nseeds, ncols, nrows;
-  
-  if(fscanf(fp,"%d %d %d",&nseeds, &ncols, &nrows)!=0);
-
-  for (i=0; i < nseeds; i++){
-    if(fscanf(fp,"%d %d %d",&x,&y,&l)!=0);
-    if (l==0)
-      InsertSet(Bkg, x + ncols*y);
-    else
-      InsertSet(Obj, x + ncols*y);
-  }
-  fclose(fp);
-}
-
 // Watershed from binary marker
 
 Image *Watershed(Image *img, Set *Obj, Set *Bkg)
@@ -98,7 +81,8 @@ int main(int argc, char **argv)
   Image    *label=NULL;
   CImage   *cimg=NULL;
   Set      *Obj=NULL,*Bkg=NULL;
-
+  char     outfile[100];
+  char     *file_noext;
   /*--------------------------------------------------------*/
 
   void *trash = malloc(1);                 
@@ -122,17 +106,19 @@ int main(int argc, char **argv)
   grad  = ReadImage(argv[2]);
   ReadSeeds(argv[3],&Obj,&Bkg);
 
+  file_noext = strtok(argv[1],".");
+
   t1 = Tic();
   
   label = Watershed(grad,Obj,Bkg);
   
   t2 = Toc();    
   
-
   fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
   
   cimg = DrawLabeledRegions(img,label);
-  WriteCImage(cimg,"result.ppm");    
+  sprintf(outfile,"%s_result.ppm",file_noext);  
+  WriteCImage(cimg,outfile);    
   DestroyImage(&grad);  
   DestroyImage(&img);  
   DestroyImage(&label);

@@ -61,7 +61,7 @@ Features *GaussImageFeats(Image *img, int nscales)
     AdjRel   *A=NULL;
     int       s,i,p,q;
     Pixel     u,v;
-    float    *w,d,K1,K2,sigma2,val;
+    float    *w,d,K1,K2,sigma2,val,sum;
 
     f->Imax = MaximumValue(img);
 
@@ -73,11 +73,12 @@ Features *GaussImageFeats(Image *img, int nscales)
         K1     =  2.0*sigma2;
         K2     = 1.0/sqrt(2.0*PI*sigma2);
         //compute kernel coefficients
-
+	sum = 0.0;
         for (i=0; i < A->n; i++)
         {
             d    = A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i];
             w[i] = K2 * exp(-d/K1); // Gaussian
+	    sum += w[i];
         }
 
         // Convolution
@@ -97,7 +98,7 @@ Features *GaussImageFeats(Image *img, int nscales)
                     val += (float)img->val[q]*w[i];
                 }
             }
-            f->elem[p].feat[s-1]=(int)val;
+            f->elem[p].feat[s-1]=(int)val/(sum*f->Imax);
         }
         free(w);
 
@@ -114,7 +115,7 @@ Features *GaussCImageFeats(CImage *cimg, int nscales)
     int       s,i,j,p,q;
     Pixel     u,v;
     Image    *img1;
-    float    *w,d,K,sigma2,val;
+    float    *w,d,K,sigma2,val,sum;
 
     f = CreateFeatures(cimg->C[0]->ncols, cimg->C[0]->nrows, 3*nscales);
 
@@ -131,12 +132,13 @@ Features *GaussCImageFeats(CImage *cimg, int nscales)
             K      =  2.0*sigma2;
 
             //compute kernel coefficients
-
+	    sum = 0.0;
             for (i=0; i < A->n; i++)
             {
                 d    = A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i];
                 w[i] = 1.0/sqrt(2.0*PI*sigma2) * exp(-d/K); // Gaussian
-            }
+		sum += w[i];
+	    }
 
             // Convolution
 
@@ -155,7 +157,7 @@ Features *GaussCImageFeats(CImage *cimg, int nscales)
                         val += (float)img1->val[q]*w[i];
                     }
                 }
-                f->elem[p].feat[s-1+(j*nscales)] = val;
+                f->elem[p].feat[s-1+(j*nscales)] = val/(sum*f->Imax);
             }
             free(w);
 
