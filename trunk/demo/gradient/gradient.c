@@ -107,7 +107,7 @@ DImage *SignedDistTrans(Image *B, Image *I)
 }
 
 // Sigmoidal rescaling of values. Max, min, beta and alpha must be in the same range
-DImage* SigmoidalStretch(DImage* img, double thresh, double max, double min, double beta, double alpha)
+DImage* SigmoidalStretch(DImage* img, double thresh, double min, double max, double beta, double alpha)
 {
   int p;
   DImage* result = CreateDImage(img->ncols, img->nrows);
@@ -115,9 +115,9 @@ DImage* SigmoidalStretch(DImage* img, double thresh, double max, double min, dou
   for(p = 0; p < img->ncols*img->nrows; p++)
     {
       if(img->val[p] < -thresh) 
-    	result->val[p] = 0.0;
+    	result->val[p] = min;
       else if(img->val[p] > thresh) 
-	result->val[p] = 1.0;
+	result->val[p] = max;
       else
 	result->val[p] = (max - min)/(1.0 + exp(-(img->val[p] - beta)/alpha)) + min;
     }
@@ -304,8 +304,8 @@ int main(int argc, char **argv)
   bndr = Boundary(final_label);
   edt = SignedDistTrans(bndr,final_label);
   
-  //thresh = 10, max = 1, min = 0.0, beta = 0.0 (EDT has value 0.0 on the boundary), alpha = 0.8
-  objmap = SigmoidalStretch(edt, 10, 1.0, 0.0, 0.0, 0.8); 
+  //thresh = 10.0, max = 1, min = 0.0, beta = 0.0 (EDT has value 0.0 on the boundary), alpha = 1.0
+  objmap = SigmoidalStretch(edt, 100.0, 0.0, 1.0, 0.0, 1.0); 
   objgrad = ObjectGradient(objmap,1.5);
   
   /* computing image gradient */
