@@ -168,3 +168,44 @@ Features *GaussCImageFeats(CImage *cimg, int nscales)
     }
     return(f);
 }
+
+
+Features* LabFeats(Features* rgb)
+{
+    int nrows=rgb->nrows;
+    int ncols=rgb->ncols;
+
+    int tam = nrows * ncols;
+
+    Features* f = CreateFeatures(ncols,nrows,rgb->nfeats);
+
+    int z,i;
+    float Imax = FLT_MIN;
+    const int nscales = rgb->nfeats/3;
+
+    // generalization for multiple scales
+    // our assumption is that the feature vectors
+    // in *rgb follow:
+    // R_1,R_2,...,R_nscales-1,G_1,G_2,...,G_nscales-1,B_1,B_2,...,B_nscales-1
+    for(i = 0; i < nscales; i++)
+    {
+        for (z = 0;z < tam;z++)
+        {
+            //******* RGB original******//
+            float R = rgb->elem[z].feat[i];
+            float G = rgb->elem[z].feat[nscales+i];
+            float B = rgb->elem[z].feat[2*nscales+i];
+
+            RGB2Lab(&R,&G,&B);
+
+            f->elem[z].feat[i] = R;
+            f->elem[z].feat[nscales+i] = G;
+            f->elem[z].feat[2*nscales+i] = B;
+
+            Imax = MAX(Imax,MAX(R,MAX(G,B)));
+        }
+    }
+    f->Imax = (int)Imax;
+
+    return f;
+}

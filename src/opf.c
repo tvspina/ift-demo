@@ -44,7 +44,7 @@ Subgraph* SubgraphFromSeeds(Features* f, Set* Si, Set* Se)
     {
         sg->node[i].pixel  = aux->elem;
         sg->node[i].position  = aux->elem;
-        sg->node[i].truelabel = 2; // using 2 for object because OPF labels start at 1 
+        sg->node[i].truelabel = OPF_OBJ_LABEL; // using 2 for object because OPF labels start at 1 
         sg->node[i].status=0; // training node
         aux = aux->next;
         i++;
@@ -54,7 +54,7 @@ Subgraph* SubgraphFromSeeds(Features* f, Set* Si, Set* Se)
     {
         sg->node[i].pixel  = aux->elem;
         sg->node[i].position  = aux->elem;
-        sg->node[i].truelabel = 1; // using 1 for background because OPF labels start at 1
+        sg->node[i].truelabel = OPF_BKG_LABEL; // using 1 for background because OPF labels start at 1
         sg->node[i].status=0; // training node
         aux = aux->next;
         i++;
@@ -137,6 +137,31 @@ void SplitSubgraph(Subgraph *sg, Subgraph **sg1, Subgraph **sg2, float perc1)
     }
 
     free(nelems);
+}
+
+
+Subgraph* SplitSubgraphByTrueLabel(Subgraph* sg, int label)
+{
+    int nnodes = 0;
+    int i, i0 = 0;
+
+    for(i = 0; i < sg->nnodes; i++)
+        if(sg->node[i].truelabel == label) nnodes++;
+    
+    Subgraph* sgresult = CreateSubgraph(nnodes);
+
+    sgresult->nfeats = sg->nfeats;
+    sgresult->df = sg->df;
+
+    for(i = 0; i < sg->nnodes; i++)
+    {
+        if(sg->node[i].truelabel == label)
+        {
+            CopySNode(&sgresult->node[i0++], &sg->node[i], sg->nfeats);
+        }
+    }
+
+    return sgresult;
 }
 
 /* OPF-related functions */
