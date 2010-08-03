@@ -70,9 +70,12 @@ int main(int argc, char **argv)
   SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
   
   t1 = Tic();
+  
+  /* OPF-based binary classification of the image */
 
   OPFLearning(&sgtrain, &sgeval);
   label = OPFClassifyImage(sgtrain, feat);
+  
   //eliminating noise
   ch_label = CloseHoles(label);
   final_label = OpenRec(ch_label,A);

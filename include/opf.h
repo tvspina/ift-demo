@@ -9,7 +9,10 @@
 #define MAXARCW 100000.0
 #define PROTOTYPE 1
 
-#define OPF_OBJ_LABEL 2
+// Object and background labels
+// for binary classification
+ 
+#define OPF_OBJ_LABEL 2 
 #define OPF_BKG_LABEL 1
 
 // Sets to every node in *sg a feature vector to the corresponding pixel in *f
@@ -41,6 +44,7 @@ void SwapErrorsbyNonPrototypes(Subgraph **sgtrain, Subgraph **sgeval);
 // Find prototypes by the MST approach
 void MSTPrototypes(Subgraph *sg);
 
+// Computes the optimum path forest on *sg
 void OPFTraining(Subgraph *sg);
 
 //Classification function: it simply classifies samples from sg -----

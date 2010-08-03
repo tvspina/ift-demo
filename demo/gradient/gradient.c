@@ -4,126 +4,11 @@
 
 /* Object map computation */
 
-/* // Extracts the boundary of an image */
-/* Image *Boundary(Image *bin) */
-/* { */
-/*   Image *bndr=NULL; */
-/*   int p=0,q,i,n; */
-/*   AdjRel *A; */
-/*   Pixel u,v; */
-
-/*   A     = Circular(1.5); */
-/*   n     = bin->ncols*bin->nrows; */
-/*   bndr  = CreateImage(bin->ncols,bin->nrows); */
-/*   for (p=0; p < n; p++) */
-/*     { */
-/*       if (bin->val[p]>0) */
-/* 	{ */
-/* 	  u.x = p%bin->ncols; */
-/* 	  u.y = p/bin->ncols; */
-/* 	  for (i=1; i < A->n; i++) */
-/* 	    { */
-/* 	      v.x = u.x + A->dx[i]; */
-/* 	      v.y = u.y + A->dy[i]; */
-/* 	      if (ValidPixel(bin,v.x,v.y)) */
-/* 		{ */
-/* 		  q = v.x + bin->tbrow[v.y]; */
-/* 		  if (bin->val[q]==0) */
-/* 		    { */
-/* 		      bndr->val[p]=1; */
-/* 		      break; */
-/* 		    } */
-/* 		} */
-/* 	    } */
-/* 	} */
-/*     } */
-/*   DestroyAdjRel(&A); */
-  
-/*   return bndr; */
-/* } */
-
-/* // Signed euclidean distance transform */
-/* // For pixels where the label I->val[p] == 0 */
-/* // the EDT value will be negative and positive otherwise */
-/* DImage *SignedDistTrans(Image *B, Image *I)  */
-/* { */
-/*   int p,q,n=B->ncols*B->nrows,i,tmp; */
-/*   Pixel u,v,w; */
-/*   AdjRel *A=Circular(1.5),*A4=Circular(1.0); */
-/*   Image* P = CreateImage(I->ncols,I->nrows); */
-/*   Image* R = CreateImage(I->ncols,I->nrows); */
-/*   Image* V = CreateImage(I->ncols,I->nrows); */
-/*   DImage* edt = CreateDImage(I->ncols,I->nrows); */
-
-/*   GQueue *Q=CreateGQueue(1024,n,V->val); */
-
-/*   // Trivial path initialization */
-
-/*   for (p=0; p < n; p++) { */
-/*     u.x = p % B->ncols; */
-/*     u.y = p / B->ncols; */
-/*     V->val[p]=INT_MAX; R->val[p]=p; P->val[p]=NIL; */
-/*     if (B->val[p]!=0){ // p belongs to an object's border */
-/*       V->val[p]=0; */
-/*       InsertGQueue(&Q,p); */
-/*     } */
-/*   } */
-
-/*   // Path propagation */
-
-/*   while(!EmptyGQueue(Q)){ */
-/*     p = RemoveGQueue(Q); */
-/*     u.x = p % B->ncols; */
-/*     u.y = p / B->ncols; */
-/*     w.x = R->val[p] % B->ncols; */
-/*     w.y = R->val[p] / B->ncols; */
-/*     for (i=1; i < A->n; i++) { */
-/*       v.x = u.x + A->dx[i]; */
-/*       v.y = u.y + A->dy[i]; */
-/*       if (ValidPixel(B,v.x,v.y)){ */
-/* 	q   = v.x + B->tbrow[v.y]; */
-/* 	if (V->val[q]>V->val[p]){	     */
-/* 	  tmp = (v.x-w.x)*(v.x-w.x)+(v.y-w.y)*(v.y-w.y); */
-/* 	  if (tmp < V->val[q]){ */
-/* 	    if (V->val[q]!=INT_MAX) RemoveGQueueElem(Q, q); */
-/* 	    V->val[q]=tmp; R->val[q]=R->val[p]; P->val[q]=p; */
-/* 	    InsertGQueue(&Q,q); */
-/* 	  } */
-/* 	} */
-/*       } */
-/*     } */
-/*     edt->val[p] = sqrt((double)V->val[p]); */
-/*     if(I->val[p] == 0) edt->val[p] = -edt->val[p]; */
-/*   } */
-
-/*   DestroyGQueue(&Q); */
-/*   DestroyAdjRel(&A); */
-/*   DestroyAdjRel(&A4); */
-/*   DestroyImage(&P); */
-/*   DestroyImage(&V); */
-/*   DestroyImage(&R); */
-
-/*   return edt; */
-/* } */
-
-/* // Sigmoidal rescaling of values. */
-/* DImage* SigmoidalStretch(DImage* img, double thresh, double min, double max, double beta, double alpha) */
-/* { */
-/*   int p; */
-/*   DImage* result = CreateDImage(img->ncols, img->nrows); */
-
-/*   for(p = 0; p < img->ncols*img->nrows; p++) */
-/*     { */
-/*       if(img->val[p] < -thresh)  */
-/*     	result->val[p] = min; */
-/*       else if(img->val[p] > thresh)  */
-/* 	result->val[p] = max; */
-/*       else */
-/* 	result->val[p] = (max - min)/(1.0 + exp(-(img->val[p] - beta)/alpha)) + min; */
-/*     } */
-/*   return result; */
-/* } */
-
+// Computes the optimum path forest 
+// on the graph *sg. For fuzzy classification
+// we have two separate complete graphs, one for the 
+// object pixels and another one for the background pixels,
+// therefore this function os called twice (see FuzzyOPFLearning)
 void FuzzyOPFTraining(Subgraph *sg)
 {
     int p;
@@ -191,7 +76,7 @@ void FuzzyOPFTraining(Subgraph *sg)
 }
 
 
-// Classify nodes of evaluation/test set for CompGraph
+// Classifies nodes of evaluation/test set
 void FuzzyOPFClassify(Subgraph *sgtrainobj, Subgraph* sgtrainbkg, Subgraph *sg)
 {
     register int i, j;
@@ -256,9 +141,9 @@ void FuzzyOPFClassify(Subgraph *sgtrainobj, Subgraph* sgtrainbkg, Subgraph *sg)
 }
 
 
-//Executes the learning procedure for CompGraph replacing the
-//missclassified samples in the evaluation set by non prototypes from
-//training set
+// Executes the learning procedure for OPF replacing the
+// missclassified samples in the evaluation set by non prototypes from
+// training set
 void FuzzyOPFLearning(Subgraph* sg, Subgraph** sgtrainobj, Subgraph** sgtrainbkg, float perc)
 {
     int i;
@@ -310,8 +195,9 @@ void FuzzyOPFLearning(Subgraph* sg, Subgraph** sgtrainobj, Subgraph** sgtrainbkg
     DestroySubgraph(&sgtrain);
 }
 
-
-DImage *FuzzyOPFPathValMap(Subgraph *sg, Features *f)
+// Computes the optimum path cost for every pixel in *f
+// from the classifier *sg (object or background forest)
+DImage *FuzzyOPFPathCostMap(Subgraph *sg, Features *f)
 {
     DImage *pvalmap=CreateDImage(f->ncols,f->nrows);
 
@@ -341,6 +227,11 @@ DImage *FuzzyOPFPathValMap(Subgraph *sg, Features *f)
     return(pvalmap);
 }
 
+// Combines the computed path cost images *d1 and *d2
+// to obtain the final result (d1 == object path cost
+// d2 == background path cost, because we expect that
+// the cost to the background forest of pixels that resemble
+// the object be greater than the cost to the object forest) 
 DImage *MembershipMap(DImage *d1, DImage *d2)
 {
     DImage *map;
@@ -366,6 +257,8 @@ DImage *MembershipMap(DImage *d1, DImage *d2)
     return map;
 }
 
+// Uses the object and background forests *sgrainobj and *sgtrainbkg, respectively,
+// to compute an object membership map using the set of feature vectors *f
 DImage* FuzzyOPFObjectMembershipMap(Subgraph *sgtrainobj, Subgraph *sgtrainbkg, Features *f)
 {
   DImage *obj_pv = FuzzyOPFPathValMap(sgtrainobj, f);
@@ -559,16 +452,15 @@ int main(int argc, char **argv)
   t1 = Tic();
 
   sg = SubgraphFromSeeds(feat,Obj,Bkg);
-  // SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
   
-  /* supervised binary classification using the Optimum-Path Forest classifier */
-  
+  /* supervised fuzzy classification using the Optimum-Path Forest classifier */
   FuzzyOPFLearning(sg, &sgtrainobj, &sgtrainbkg, 0.2);
   objmap = FuzzyOPFObjectMembershipMap(sgtrainobj, sgtrainbkg, feat);
   
+  /* computing object gradient */
   objgrad = ObjectGradient(objmap,1.5);
   
-  /* computing image gradient */
+  /* computing feature vector gradient */
   imggrad = FeaturesGradient(feat, 1.5);
 
   /* combining gradients */
