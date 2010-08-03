@@ -1,10 +1,36 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "morphology.h"
 
 /* Explanation for some variables
 
 V is the cost or connectivity map
 P is the predecessor map
-I is the mask image 
+I is the mask image
 J is the marker image
 
 */
@@ -15,7 +41,7 @@ Image *Dilate(Image *img, AdjRel *A)
   int p,q,i;
   Pixel u,v;
 
-  for (u.y=0; u.y < img->nrows; u.y++) 
+  for (u.y=0; u.y < img->nrows; u.y++)
     for (u.x=0; u.x < img->ncols; u.x++) {
       p = u.x + img->tbrow[u.y];
       dil->val[p]=img->val[p];
@@ -38,7 +64,7 @@ Image *Erode(Image *img, AdjRel *A)
   int p,q,i;
   Pixel u,v;
 
-  for (u.y=0; u.y < img->nrows; u.y++) 
+  for (u.y=0; u.y < img->nrows; u.y++)
     for (u.x=0; u.x < img->ncols; u.x++) {
       p = u.x + img->tbrow[u.y];
       ero->val[p]=img->val[p];
@@ -82,11 +108,11 @@ Set *ImageBorder(Image *img)
   Set *S=NULL;
   Pixel u;
 
-  for (u.x=0; u.x < img->ncols; u.x++){ 
+  for (u.x=0; u.x < img->ncols; u.x++){
     InsertSet(&S,u.x);
     InsertSet(&S,u.x+img->tbrow[img->nrows-1]);
   }
-  for (u.y=1; u.y < img->nrows-1; u.y++){ 
+  for (u.y=1; u.y < img->nrows-1; u.y++){
     InsertSet(&S,img->tbrow[u.y]);
     InsertSet(&S,img->ncols-1+img->tbrow[u.y]);
   }
@@ -110,11 +136,11 @@ Image *SupRec(Image *img, Image *marker)
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
-    cost->val[p]=marker->val[p]; 
+    cost->val[p]=marker->val[p];
     InsertGQueue(&Q,p);
   }
 
-  // Path propagation 
+  // Path propagation
 
   while(!EmptyGQueue(Q)) {
     p=RemoveGQueue(Q);
@@ -154,16 +180,16 @@ Image *InfRec(Image *img, Image *marker)
   n     = img->ncols*img->nrows;
   cost  = CreateImage(img->ncols,img->nrows);
   Q     = CreateGQueue(MaximumValue(img)+1,n,cost->val);
-  SetRemovalPolicy(Q,MAXVALUE); 
+  SetRemovalPolicy(Q,MAXVALUE);
 
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
-    cost->val[p]=marker->val[p]; 
+    cost->val[p]=marker->val[p];
     InsertGQueue(&Q,p);
   }
 
-  // Path propagation 
+  // Path propagation
 
   while(!EmptyGQueue(Q)) {
     p=RemoveGQueue(Q);
@@ -209,16 +235,16 @@ Image *SupRecMI(Image *img, Set **S)
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
-    cost->val[p]=INT_MAX; 
+    cost->val[p]=INT_MAX;
   }
 
   while(*S!=NULL){
     p = RemoveSet(S);
-    cost->val[p]=img->val[p]; 
+    cost->val[p]=img->val[p];
     InsertGQueue(&Q,p);
   }
 
-  // Path propagation 
+  // Path propagation
 
   while(!EmptyGQueue(Q)) {
     p=RemoveGQueue(Q);
@@ -259,21 +285,21 @@ Image *InfRecMI(Image *img, Set **S)
   n     = img->ncols*img->nrows;
   cost  = CreateImage(img->ncols,img->nrows);
   Q     = CreateGQueue(MaximumValue(img)+1,n,cost->val);
-  SetRemovalPolicy(Q,MAXVALUE); 
+  SetRemovalPolicy(Q,MAXVALUE);
 
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
-    cost->val[p]=INT_MIN; 
+    cost->val[p]=INT_MIN;
   }
 
   while(*S!=NULL){
     p = RemoveSet(S);
-    cost->val[p]=img->val[p]; 
+    cost->val[p]=img->val[p];
     InsertGQueue(&Q,p);
   }
 
-  // Path propagation 
+  // Path propagation
 
   while(!EmptyGQueue(Q)) {
     p=RemoveGQueue(Q);
@@ -305,7 +331,7 @@ Image *CloseBasins(Image *img)
 {
   Image *cbas;
   Set *S=NULL;
-  
+
   S    = ImageBorder(img);
   cbas = SupRecMI(img,&S);
 
@@ -316,7 +342,7 @@ Image *OpenDomes(Image *img)
 {
   Image *odom;
   Set *S=NULL;
-  
+
   S    = ImageBorder(img);
   odom = InfRecMI(img,&S);
 
@@ -341,7 +367,7 @@ Image *FastDilate(Image *I,Set **S, float radius)
     first_time=1;
 
   for(p=0; p < nspels; p++) {
-    J->val[p]=I->val[p]; R[p]=p; 
+    J->val[p]=I->val[p]; R[p]=p;
     if (I->val[p]==0) // p is background
       V[p]=INT_MAX;
     else{ // p is object
@@ -365,8 +391,8 @@ Image *FastDilate(Image *I,Set **S, float radius)
   }
 
   while (*S != NULL){
-    p   = RemoveSet(S); 
-    V[p]= 0; 
+    p   = RemoveSet(S);
+    V[p]= 0;
     InsertGQueue(&Q,p);
   }
 
@@ -376,7 +402,7 @@ Image *FastDilate(Image *I,Set **S, float radius)
   while(!EmptyGQueue(Q)){
     p = RemoveGQueue(Q);
     if (V[p] <= r2) {
-      J->val[p]=1; 
+      J->val[p]=1;
       u.x = p % I->ncols;
       u.y = p / I->ncols;
       w.x = R[p] % I->ncols;
@@ -386,7 +412,7 @@ Image *FastDilate(Image *I,Set **S, float radius)
 	v.y = u.y + A->dy[i];
 	if (ValidPixel(I,v.x,v.y)){
 	  q   = v.x + I->tbrow[v.y];
-	  if (V[q]>V[p]){	    
+	  if (V[q]>V[p]){
 	    tmp = (v.x-w.x)*(v.x-w.x)+(v.y-w.y)*(v.y-w.y);
 	    if (tmp < V[q]){
 	      if (V[q]!=INT_MAX){
@@ -429,7 +455,7 @@ Image *FastErode(Image *I,Set **S, float radius)
     first_time=1;
 
   for(p=0; p < nspels; p++) {
-    J->val[p]=I->val[p]; R[p]=p; 
+    J->val[p]=I->val[p]; R[p]=p;
     if (I->val[p]==1) // p is object
       V[p]=INT_MAX;
     else{ // p is background
@@ -453,8 +479,8 @@ Image *FastErode(Image *I,Set **S, float radius)
   }
 
   while (*S != NULL){
-    p   = RemoveSet(S); 
-    V[p]= 0; 
+    p   = RemoveSet(S);
+    V[p]= 0;
     InsertGQueue(&Q,p);
   }
 
@@ -464,7 +490,7 @@ Image *FastErode(Image *I,Set **S, float radius)
   while(!EmptyGQueue(Q)){
     p = RemoveGQueue(Q);
     if (V[p] <= r2) {
-      J->val[p]=0; 
+      J->val[p]=0;
       u.x = p % I->ncols;
       u.y = p / I->ncols;
       w.x = R[p] % I->ncols;
@@ -474,7 +500,7 @@ Image *FastErode(Image *I,Set **S, float radius)
 	v.y = u.y + A->dy[i];
 	if (ValidPixel(I,v.x,v.y)){
 	  q   = v.x + I->tbrow[v.y];
-	  if (V[q]>V[p]){	    
+	  if (V[q]>V[p]){
 	    tmp = (v.x-w.x)*(v.x-w.x)+(v.y-w.y)*(v.y-w.y);
 	    if (tmp < V[q]){
 	      if (V[q]!=INT_MAX){
@@ -565,7 +591,7 @@ Image *CloseHoles(Image *img)
 {
   Image *marker=NULL,*cimg=NULL;
   int x,y,i,j,Imax;
-  
+
   Imax   = MaximumValue(img);
   marker   = CreateImage(img->ncols,img->nrows);
   SetImage(marker,Imax+1);

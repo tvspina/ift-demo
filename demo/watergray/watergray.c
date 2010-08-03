@@ -1,3 +1,29 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
 // Add value to remove basins with depth less than H
@@ -7,9 +33,9 @@ Image *AddValue(Image *img, int H)
   Image *marker=CreateImage(img->ncols,img->nrows);
   int p,n=img->ncols*img->nrows;
 
-  for (p=0; p < n; p++) 
+  for (p=0; p < n; p++)
     marker->val[p]=img->val[p]+H;
-    
+
   return(marker);
 }
 
@@ -31,7 +57,7 @@ Image *WaterGray(Image *img, Image *marker, AdjRel *A)
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
-    cost->val[p]=marker->val[p]+1; 
+    cost->val[p]=marker->val[p]+1;
     pred->val[p]=NIL;
     InsertGQueue(&Q,p);
   }
@@ -71,7 +97,7 @@ Image *WaterGray(Image *img, Image *marker, AdjRel *A)
   return(label);
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   Image    *img=NULL,*grad=NULL,*marker=NULL;
@@ -82,10 +108,10 @@ int main(int argc, char **argv)
   char     *file_noext;
   /*--------------------------------------------------------*/
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
 
@@ -93,42 +119,42 @@ int main(int argc, char **argv)
 
   if (argc!=4){
     fprintf(stderr,"Usage: watergray <image.pgm> <gradient.pgm> <H>\n");
-    fprintf(stderr,"image.pgm: grayscale image to overlay the watershed lines on it\n"); 
-    fprintf(stderr,"gradient.pgm: gradient image to compute the watershed segmentation\n"); 
-    fprintf(stderr,"H: an integer that will be added to the gradient to eliminate irrelevant basins (typically <= 100)\n"); 
+    fprintf(stderr,"image.pgm: grayscale image to overlay the watershed lines on it\n");
+    fprintf(stderr,"gradient.pgm: gradient image to compute the watershed segmentation\n");
+    fprintf(stderr,"H: an integer that will be added to the gradient to eliminate irrelevant basins (typically <= 100)\n");
     exit(-1);
   }
- 
+
   img    = ReadImage(argv[1]);
   grad   = ReadImage(argv[2]);
 
   file_noext = strtok(argv[1],".");
 
   // A grayscale marker can be created by any extensive operation:
-  // A value H may be added to eliminate irrelevant basins, for instance. 
+  // A value H may be added to eliminate irrelevant basins, for instance.
 
   marker = AddValue(grad,atoi(argv[3]));
 
   // Watershed from grayscale marker
 
   A = Circular(1.0); // try also higher adjacency radii: 1.5, 2.5, etc.
-    
+
   t1 = Tic();
 
   label = WaterGray(grad,marker,A);
 
-  t2 = Toc();    
-  
+  t2 = Toc();
+
   fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
 
   // Draw watershed lines
 
   cimg = DrawLabeledRegions(img,label);
   sprintf(outfile,"%s_result.ppm",file_noext);
-  WriteCImage(cimg,outfile);    
-  DestroyImage(&grad);  
-  DestroyImage(&img);  
-  DestroyImage(&marker);  
+  WriteCImage(cimg,outfile);
+  DestroyImage(&grad);
+  DestroyImage(&img);
+  DestroyImage(&marker);
   DestroyCImage(&cimg);
   DestroyImage(&label);
   DestroyAdjRel(&A);
@@ -140,7 +166,7 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
+	   MemDinInicial,MemDinFinal);
 
   return(0);
 }

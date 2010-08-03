@@ -1,12 +1,38 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
 #define MAXGRAD 255
 
 /* Object map computation */
 
-// Computes the optimum path forest 
+// Computes the optimum path forest
 // on the graph *sg. For fuzzy classification
-// we have two separate complete graphs, one for the 
+// we have two separate complete graphs, one for the
 // object pixels and another one for the background pixels,
 // therefore this function os called twice (see FuzzyOPFLearning)
 void FuzzyOPFTraining(Subgraph *sg)
@@ -188,7 +214,7 @@ void FuzzyOPFLearning(Subgraph* sg, Subgraph** sgtrainobj, Subgraph** sgtrainbkg
 
     *sgtrainobj = sgtrainobj1;
     *sgtrainbkg = sgtrainbkg1;
-    
+
     fprintf(stderr,"Best accuracy %f\n",MaxAcc);
 
     DestroySubgraph(&sgeval);
@@ -231,7 +257,7 @@ DImage *FuzzyOPFPathCostMap(Subgraph *sg, Features *f)
 // to obtain the final result (d1 == object path cost
 // d2 == background path cost, because we expect that
 // the cost to the background forest of pixels that resemble
-// the object be greater than the cost to the object forest) 
+// the object be greater than the cost to the object forest)
 DImage *MembershipMap(DImage *d1, DImage *d2)
 {
     DImage *map;
@@ -261,14 +287,14 @@ DImage *MembershipMap(DImage *d1, DImage *d2)
 // to compute an object membership map using the set of feature vectors *f
 DImage* FuzzyOPFObjectMembershipMap(Subgraph *sgtrainobj, Subgraph *sgtrainbkg, Features *f)
 {
-  DImage *obj_pv = FuzzyOPFPathValMap(sgtrainobj, f);
-  DImage *bkg_pv = FuzzyOPFPathValMap(sgtrainbkg, f);
-  
+  DImage *obj_pv = FuzzyOPFPathCostMap(sgtrainobj, f);
+  DImage *bkg_pv = FuzzyOPFPathCostMap(sgtrainbkg, f);
+
   DImage* objMap = MembershipMap(obj_pv, bkg_pv);
 
   DestroyDImage(&obj_pv);
   DestroyDImage(&bkg_pv);
-  
+
   return objMap;
 }
 
@@ -289,7 +315,7 @@ Image *ObjectGradient(DImage *img, float radius)
 
     for (i=1; i < A->n; i++)
         md[i]=sqrt(A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i]);
- 
+
     for (p=0; p < n; p++)
     {
         u.x = p%img->ncols;
@@ -328,7 +354,7 @@ Image *FeaturesGradient(Features *f,float radius)
     AdjRel *A=Circular(radius);
     real   *md=AllocRealArray(A->n);
 
-    Image* grad = CreateImage(f->ncols, f->nrows);  
+    Image* grad = CreateImage(f->ncols, f->nrows);
 
     for (i=1; i < A->n; i++)
         md[i]=sqrt(A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i]);
@@ -395,15 +421,15 @@ int main(int argc, char **argv)
 
   /* The following block must the remarked when using non-linux machines */
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
-  
+
   /*----------------------------------------------------------------------*/
-  
+
   if (argc!=4){
     fprintf(stderr,"Usage: %s <image.pgm (.ppm)>  <seeds.txt> <wobj [0,1]>\n",argv[0]);
     fprintf(stderr,"image.pgm (.ppm): image to be classified\n");
@@ -419,12 +445,12 @@ int main(int argc, char **argv)
     Image   *img=NULL;
     img   = ReadImage(argv[1]);
     feat  = GaussImageFeats(img, 2);
-    
-    DestroyImage(&img);  
+
+    DestroyImage(&img);
   }else{
     CImage   *cimg=NULL;
     cimg   = ReadCImage(argv[1]);
-    
+
     Features *gaussfeats   = GaussCImageFeats(cimg, 2);
 
     int p,j;
@@ -452,14 +478,14 @@ int main(int argc, char **argv)
   t1 = Tic();
 
   sg = SubgraphFromSeeds(feat,Obj,Bkg);
-  
+
   /* supervised fuzzy classification using the Optimum-Path Forest classifier */
   FuzzyOPFLearning(sg, &sgtrainobj, &sgtrainbkg, 0.2);
   objmap = FuzzyOPFObjectMembershipMap(sgtrainobj, sgtrainbkg, feat);
-  
+
   /* computing object gradient */
   objgrad = ObjectGradient(objmap,1.5);
-  
+
   /* computing feature vector gradient */
   imggrad = FeaturesGradient(feat, 1.5);
 
@@ -469,19 +495,19 @@ int main(int argc, char **argv)
   t2 = Toc();
 
   fprintf(stdout,"Gradient computing in %f ms\n",CTime(t1,t2));
-    
+
   tmp = ConvertDImage2Image(objmap);
   sprintf(outfile,"%s_objmap.pgm",file_noext);
   WriteImage(tmp,outfile);
   DestroyImage(&tmp);
-  
+
   sprintf(outfile,"%s_objgrad.pgm",file_noext);
   WriteImage(objgrad,outfile);
   sprintf(outfile,"%s_imggrad.pgm",file_noext);
   WriteImage(imggrad,outfile);
   sprintf(outfile,"%s_grad.pgm",file_noext);
   WriteImage(grad,outfile);
-  
+
   DestroyDImage(&objmap);
   DestroyImage(&imggrad);
   DestroyImage(&objgrad);
@@ -500,8 +526,8 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
-  
+	   MemDinInicial,MemDinFinal);
+
 
   return(0);
 }
