@@ -31,19 +31,36 @@ int main(int argc, char **argv)
 
   char *ext = strrchr(argv[1],'.');
 
+
   if(!strcmp(ext,".pgm"))
   {
     Image   *img=NULL;
     img   = ReadImage(argv[1]);
-    feat = GaussImageFeats(img, 2);
+    feat  = GaussImageFeats(img, 2);
+    
     DestroyImage(&img);  
   }else{
     CImage   *cimg=NULL;
     cimg   = ReadCImage(argv[1]);
-    feat = GaussCImageFeats(cimg, 2);
+    
+    Features *gaussfeats   = GaussCImageFeats(cimg, 2);
+
+    int p,j;
+    //converting features from [0,1] to [0,255]
+    for(p = 0; p < gaussfeats->nelems; p++)
+      for(j = 0; j < gaussfeats->nfeats; j++)
+	gaussfeats->elem[p].feat[j] *= gaussfeats->Imax;
+
+    feat = LabFeats(gaussfeats);
+    //converting features from [0,255] to [0,1]
+    for(p = 0; p < feat->nelems; p++)
+      for(j = 0; j < feat->nfeats; j++)
+	feat->elem[p].feat[j] /= feat->Imax;
+
     DestroyCImage(&cimg);
+    DestroyFeatures(&gaussfeats);
   }
-  
+
   file_noext = strtok(argv[1],".");
 
   A = Circular(2);

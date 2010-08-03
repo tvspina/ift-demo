@@ -9,13 +9,22 @@
 #define MAXARCW 100000.0
 #define PROTOTYPE 1
 
+#define OPF_OBJ_LABEL 2
+#define OPF_BKG_LABEL 1
+
+// Sets to every node in *sg a feature vector to the corresponding pixel in *f
 void SetSubgraphFeatures(Subgraph *sg, Features *f);
 
+// Creates a subgraph from the sets of selected object and background seeds
+// and sets the corresponding feature vectors
 Subgraph* SubgraphFromSeeds(Features* f, Set* Si, Set* Se);
 
 // Split subgraph into two parts such that the size of the first part
 // is given by a percentual of samples.
 void SplitSubgraph(Subgraph *sg, Subgraph **sg1, Subgraph **sg2, float perc1);
+
+// Creates a subgraph that contains all nodes whose truelabel == label
+Subgraph* SplitSubgraphByTrueLabel(Subgraph* sg, int label);
 
 // Compute Euclidean distance between feature vectors
 float EuclDist(float *f1, float *f2, int n);

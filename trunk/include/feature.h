@@ -30,4 +30,6 @@ Features* CopyFeatures(Features* feat);
 Features *GaussImageFeats(Image *img, int nscales);
 Features *GaussCImageFeats(CImage *cimg, int nscales);
 
+Features* LabFeats(Features* rgb);
+
 #endif // _FEATURE_H_
