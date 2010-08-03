@@ -1,3 +1,28 @@
+/*
+  Copyright (C) <2009> <Alexandre Xavier Falcão and João Paulo Papa>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+  please see full copyright in COPYING file.
+  -------------------------------------------------------------------------
+  written by A.X. Falcão <afalcao@ic.unicamp.br> and by J.P. Papa
+  <papa.joaopaulo@gmail.com>, Oct 20th 2008
+
+  This program is a collection of functions to manage the Optimum-Path Forest (OPF)
+  classifier.*/
+
 #include "opf.h"
 
 /* Functions to create Subgraphs for OPF */
@@ -44,7 +69,7 @@ Subgraph* SubgraphFromSeeds(Features* f, Set* Si, Set* Se)
     {
         sg->node[i].pixel  = aux->elem;
         sg->node[i].position  = aux->elem;
-        sg->node[i].truelabel = OPF_OBJ_LABEL; // using 2 for object because OPF labels start at 1 
+        sg->node[i].truelabel = OPF_OBJ_LABEL; // using 2 for object because OPF labels start at 1
         sg->node[i].status=0; // training node
         aux = aux->next;
         i++;
@@ -147,7 +172,7 @@ Subgraph* SplitSubgraphByTrueLabel(Subgraph* sg, int label)
 
     for(i = 0; i < sg->nnodes; i++)
         if(sg->node[i].truelabel == label) nnodes++;
-    
+
     Subgraph* sgresult = CreateSubgraph(nnodes);
 
     sgresult->nfeats = sg->nfeats;
@@ -394,7 +419,7 @@ void OPFTraining(Subgraph *sg)
                 if (pathval[p] < pathval[q])
                 {
 		    weight = EuclDistLog(sg->node[p].feat,sg->node[q].feat,sg->nfeats);
-                 
+
                     tmp  = MAX(pathval[p],weight);
                     if ( tmp < pathval[ q ] )
                     {
@@ -433,7 +458,7 @@ void OPFClassify(Subgraph *sgtrain, Subgraph *sg)
             l  = sgtrain->ordered_list_of_nodes[j+1];
 
             weight = EuclDistLog(sgtrain->node[l].feat,sg->node[i].feat,sg->nfeats);
-           
+
             tmp = MAX(sgtrain->node[l].pathval, weight);
             if (tmp < minCost)
             {
@@ -494,7 +519,7 @@ Image* OPFClassifyImage(Subgraph *sgtrain, Features* feat)
         k       = sgtrain->ordered_list_of_nodes[j];
 
 	weight = EuclDistLog(sgtrain->node[k].feat,feat->elem[i].feat,sgtrain->nfeats);
-	
+
         minCost = MAX(sgtrain->node[k].pathval, weight);
         label   = sgtrain->node[k].label;
 
@@ -504,7 +529,7 @@ Image* OPFClassifyImage(Subgraph *sgtrain, Features* feat)
             l  = sgtrain->ordered_list_of_nodes[j+1];
 
             weight = EuclDistLog(sgtrain->node[l].feat,feat->elem[i].feat,sgtrain->nfeats);
-            
+
 	    tmp = MAX(sgtrain->node[l].pathval, weight);
             if (tmp < minCost)
             {

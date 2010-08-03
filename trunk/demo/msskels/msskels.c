@@ -1,3 +1,29 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
 // Verify if it is possible to start at this pixel for contour labeling
@@ -79,14 +105,14 @@ void DestroyForest(Forest **F)
 
 // Euclidean distance transform
 
-Forest *DistTrans(Image *I) 
+Forest *DistTrans(Image *I)
 {
   int p,q,n=I->ncols*I->nrows,i,tmp;
   Pixel u,v,w;
   AdjRel *A=Circular(1.5),*A4=Circular(1.0);
   Forest *F=CreateForest(I->ncols,I->nrows);
   GQueue *Q=CreateGQueue(1024,n,F->V->val);
-  
+
   // Trivial path initialization
 
   for (p=0; p < n; p++) {
@@ -112,7 +138,7 @@ Forest *DistTrans(Image *I)
       v.y = u.y + A->dy[i];
       if (ValidPixel(I,v.x,v.y)){
 	q   = v.x + I->tbrow[v.y];
-	if (F->V->val[q]>F->V->val[p]){	    
+	if (F->V->val[q]>F->V->val[p]){
 	  tmp = (v.x-w.x)*(v.x-w.x)+(v.y-w.y)*(v.y-w.y);
 	  if (tmp < F->V->val[q]){
 	    if (F->V->val[q]!=INT_MAX) RemoveGQueueElem(Q, q);
@@ -140,7 +166,7 @@ Image *LambdaContour(Image *bin)
   int p=0,q,r,i,j,left=0,right=0,n,*LIFO,last,l=1;
   AdjRel *A,*L,*R;
   Pixel u,v,w;
-  
+
   A     = Circular(1.0);
   n     = bin->ncols*bin->nrows;
   bndr  = CreateImage(bin->ncols,bin->nrows);
@@ -177,12 +203,12 @@ Image *LambdaContour(Image *bin)
   for (j=0; j < n; j++){
     if ((bndr->val[j]==1)&&
 	(color->val[j]!=BLACK)&&
-	ValidContPoint(bin,L,R,j)){      
+	ValidContPoint(bin,L,R,j)){
       last++; LIFO[last]    = j;
       color->val[j] = GRAY;
       pred->val[j] = j;
       while(last != NIL){
-	p = LIFO[last];	last--;	
+	p = LIFO[last];	last--;
 	color->val[p]=BLACK;
 	u.x = p%bndr->ncols;
 	u.y = p/bndr->ncols;
@@ -195,19 +221,19 @@ Image *LambdaContour(Image *bin)
 	      last = NIL;
 	      break;
 	    }
-	    w.x = u.x + L->dx[i]; 
+	    w.x = u.x + L->dx[i];
 	    w.y = u.y + L->dy[i];
 	    if (ValidPixel(bndr,w.x,w.y))
 	      left = w.x + bndr->tbrow[w.y];
 	    else
 	      left = -1;
-	    w.x = u.x + R->dx[i]; 
+	    w.x = u.x + R->dx[i];
 	    w.y = u.y + R->dy[i];
 	    if (ValidPixel(bndr,w.x,w.y))
 	      right = w.x + bndr->tbrow[w.y];
 	    else
 	      right = -1;
-	    
+
 	    if ((bndr->val[q]==1)&&
 		(color->val[q] != BLACK)&&
 		(((left!=-1)&&(right!=-1)&&(bin->val[left]!=bin->val[right]))||
@@ -218,15 +244,15 @@ Image *LambdaContour(Image *bin)
 		last++; LIFO[last] = q;
 		color->val[q]=GRAY;
 	      }
-	    } 
+	    }
 	  }
-	}	
+	}
       }
       r = p;
       while(pred->val[p]!=p){
 	lambda->val[p] = l;
 	p = pred->val[p];
-      } 
+      }
       if (r != p){
 	lambda->val[p] = l;
 	l++;
@@ -255,7 +281,7 @@ Image *LambdaContPixel(Image *bin)
   int p=0,q,r,i,j,n,left=0,right=0,*LIFO,last,l;
   AdjRel *A,*L,*R;
   Pixel u,v,w;
-  
+
   A     = Circular(1.0);
   n     = bin->ncols*bin->nrows;
   bndr  = CreateImage(bin->ncols,bin->nrows);
@@ -278,7 +304,7 @@ Image *LambdaContPixel(Image *bin)
 	}
       }
     }
-  }  
+  }
   DestroyAdjRel(&A);
 
   A      = Circular(1.5);
@@ -299,7 +325,7 @@ Image *LambdaContPixel(Image *bin)
       color->val[j] = GRAY;
       pred->val[j] = j;
       while(last != NIL){
-	p = LIFO[last]; last--;	
+	p = LIFO[last]; last--;
 	color->val[p]=BLACK;
 	u.x = p%bndr->ncols;
 	u.y = p/bndr->ncols;
@@ -312,34 +338,34 @@ Image *LambdaContPixel(Image *bin)
 	      last = NIL;
 	      break;
 	    }
-	    
-	    w.x = u.x + L->dx[i]; 
+
+	    w.x = u.x + L->dx[i];
 	    w.y = u.y + L->dy[i];
 	    if (ValidPixel(bndr,w.x,w.y))
 	      left = w.x + bndr->tbrow[w.y];
 	    else
 	      left = -1;
-	    w.x = u.x + R->dx[i]; 
+	    w.x = u.x + R->dx[i];
 	    w.y = u.y + R->dy[i];
 	    if (ValidPixel(bndr,w.x,w.y))
 	      right = w.x + bndr->tbrow[w.y];
 	    else
 	      right = -1;
-	    
+
 	    if ((bndr->val[q]==1)&&
 		(color->val[q] != BLACK)&&
 		(((left!=-1)&&(right!=-1)&&(bin->val[left]!=bin->val[right]))||
 		 ((left==-1)&&(right!=-1)&&(bin->val[right]==1)) ||
-		 ((right==-1)&&(left!=-1)&&(bin->val[left]==1)))){ 
+		 ((right==-1)&&(left!=-1)&&(bin->val[left]==1)))){
 	      pred->val[q] = p;
 	      if (color->val[q] == WHITE){
 		last++;
 		LIFO[last] = q;
 		color->val[q]=GRAY;
 	      }
-	    } 
+	    }
 	  }
-	}	
+	}
       }
       r = p;
       l = 1;
@@ -348,11 +374,11 @@ Image *LambdaContPixel(Image *bin)
 	p = pred->val[p];
 	l++;
       }
-      
+
       if (r != p) {
 	lambda->val[p] = l;
       }
-      
+
     }
   }
 
@@ -365,7 +391,7 @@ Image *LambdaContPixel(Image *bin)
   DestroyImage(&pred);
   free(LIFO);
   return(lambda);
-} 
+}
 
 // Computes the perimeter of each contour
 
@@ -377,8 +403,8 @@ Image *Perimeter(Image *bin)
 
   cont  = LambdaContour(bin);
   n     = cont->ncols*cont->nrows;
-  for (p=0; p < n; p++) { 
-    if(cont->val[p]==NIL) 
+  for (p=0; p < n; p++) {
+    if(cont->val[p]==NIL)
       cont->val[p]=0;
   }
 
@@ -419,7 +445,7 @@ Image *MSSkel(Image *I)
 
   MaxD = INT_MIN;
   for (p=0; p < n; p++) {
-    if (F->R->val[p] != p) { // avoid computation on the contours 
+    if (F->R->val[p] != p) { // avoid computation on the contours
       u.x = p%I->ncols;
       u.y = p/I->ncols;
       maxd1 = maxd2 = INT_MIN;
@@ -428,17 +454,17 @@ Image *MSSkel(Image *I)
 	v.y = u.y + A->dy[i];
 	if (ValidPixel(I,v.x,v.y)){
 	  q = v.x + I->tbrow[v.y];
-	  if (cont->val[F->R->val[p]] == cont->val[F->R->val[q]]){ 
+	  if (cont->val[F->R->val[p]] == cont->val[F->R->val[q]]){
 	    d2   = label->val[F->R->val[q]]-label->val[F->R->val[p]];
 	    if (d2 > (perim->val[F->R->val[p]]-d2)){
 	      d2 = (perim->val[F->R->val[p]]-d2);
-	    } 
+	    }
 	    if (d2 > maxd2){
 	      maxd2 = d2;
 	    }
 	  } else {
-	    d1 = cont->val[F->R->val[q]] - cont->val[F->R->val[p]];	    
-	    if (d1 > maxd1) 
+	    d1 = cont->val[F->R->val[q]] - cont->val[F->R->val[p]];
+	    if (d1 > maxd1)
 	      maxd1 = d1;
 	  }
 	}
@@ -448,7 +474,7 @@ Image *MSSkel(Image *I)
       } else {
 	msskel->val[p] = MAX(maxd2,0);
 	if (msskel->val[p] > MaxD)
-	  MaxD = msskel->val[p];    
+	  MaxD = msskel->val[p];
       }
     }
   }
@@ -476,21 +502,21 @@ int main(int argc, char **argv)
   char   *file_noext;
   /* The following block must the remarked when using non-linux machines */
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
-  
+
   /*----------------------------------------------------------------------*/
-  
+
   if (argc != 2) {
     printf("Usage: %s <image.pgm>\n",argv[0]);
     printf("image.pgm: binary image for which a multiscale skeleton will be computed\n");
     exit(0);
   }
-  
+
   aux = ReadImage(argv[1]);
   file_noext = strtok(argv[1],".");
 
@@ -503,7 +529,7 @@ int main(int argc, char **argv)
     img = CopyImage(aux);
   }
   DestroyImage(&aux);
-    
+
   t1 = Tic();
 
   msskel=MSSkel(img);
@@ -514,7 +540,7 @@ int main(int argc, char **argv)
 
   sprintf(outfile,"%s_msskel.pgm",file_noext);
   WriteImage(msskel,outfile);
-  
+
   maxval = MaximumValue(msskel);
 
   skel = Threshold(msskel,(int)(0.05*maxval),maxval);
@@ -541,8 +567,8 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
-  
+	   MemDinInicial,MemDinFinal);
+
 
   return(0);
 }

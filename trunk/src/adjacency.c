@@ -1,3 +1,29 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "adjacency.h"
 
 AdjRel *CreateAdjRel(int n)
@@ -26,7 +52,7 @@ void DestroyAdjRel(AdjRel **A)
     if (aux->dy != NULL) free(aux->dy);
     free(aux);
     *A = NULL;
-  }   
+  }
 }
 
 
@@ -58,8 +84,8 @@ Image  *AdjRel2Image(AdjRel *A){
     if(dy>dymax)
       dymax = dy;
   }
-  
-  mask = CreateImage(dxmax*2+1, 
+
+  mask = CreateImage(dxmax*2+1,
 		     dymax*2+1);
   u.x = dxmax;
   u.y = dymax;
@@ -116,7 +142,7 @@ AdjRel *LeftSide(AdjRel *A)
       L->dy[i] = ROUND(((float)A->dy[i]/2)-((float)A->dx[i]/d));
     }
   }
-  
+
   return(L);
 }
 
@@ -160,7 +186,7 @@ AdjRel *LeftSide2(AdjRel *A, float r)
       L->dy[i] = ROUND( ((float)A->dy[i]/2)-((float)A->dx[i]/d)*r );
     }
   }
-  
+
   return(L);
 }
 
@@ -179,7 +205,7 @@ AdjRel *Circular(float r)
     for(dx=-r0;dx<=r0;dx++)
       if(((dx*dx)+(dy*dy)) <= r2)
 	n++;
-	
+
   A = CreateAdjRel(n);
   i=0;
   for(dy=-r0;dy<=r0;dy++)
@@ -193,14 +219,14 @@ AdjRel *Circular(float r)
       }
 
   /* Set clockwise */
-  
+
   da = AllocFloatArray(A->n);
   dr = AllocFloatArray(A->n);
   for (i=0; i < A->n; i++) {
     dx = A->dx[i];
     dy = A->dy[i];
     dr[i] = (float)sqrt((dx*dx) + (dy*dy));
-    if (i != i0){ 
+    if (i != i0){
       da[i] = atan2(-dy,-dx)*180.0/PI;
       if (da[i] < 0.0)
 	da[i] += 360.0;
@@ -210,7 +236,7 @@ AdjRel *Circular(float r)
   dr[i0] = 0.0;
 
   /* place central pixel at first */
-  
+
   aux    = da[i0];
   da[i0] = da[0];
   da[0]  = aux;
@@ -225,7 +251,7 @@ AdjRel *Circular(float r)
   A->dy[0]  = d;
 
   /* sort by angle */
-  
+
   for (i=1; i < A->n-1; i++){
     k = i;
     for (j=i+1; j < A->n; j++)
@@ -247,7 +273,7 @@ AdjRel *Circular(float r)
   }
 
   /* sort by radius for each angle */
-  
+
   for (i=1; i < A->n-1; i++){
     k = i;
     for (j=i+1; j < A->n; j++)
@@ -283,7 +309,7 @@ AdjRel *FastCircular(float r){
     for(dx=-r0;dx<=r0;dx++)
       if(((dx*dx)+(dy*dy)) <= r2)
 	n++;
-	
+
   A = CreateAdjRel(n);
   i=0;
   for(dy=-r0;dy<=r0;dy++)
@@ -427,7 +453,7 @@ AdjPxl *AdjPixels(Image *img, AdjRel *A)
     for (i=0; i < N->n; i++)
       N->dp[i] = A->dx[i] + img->ncols*A->dy[i];
   }else{
-    Error(MSG1,"AdjPixels");  
+    Error(MSG1,"AdjPixels");
   }
 
   return(N);
@@ -451,9 +477,9 @@ int FrameSize(AdjRel *A)
   int sz=INT_MIN,i=0;
 
   for (i=0; i < A->n; i++){
-    if (fabs(A->dx[i]) > sz) 
+    if (fabs(A->dx[i]) > sz)
       sz = fabs(A->dx[i]);
-    if (fabs(A->dy[i]) > sz) 
+    if (fabs(A->dy[i]) > sz)
       sz = fabs(A->dy[i]);
   }
   return(sz);
@@ -474,21 +500,21 @@ AdjRel *ComplAdj(AdjRel *A1, AdjRel *A2)
   A = NULL;
   subset = AllocCharArray(A2->n);
   n = 0;
-  for (i=0; i < A1->n; i++) 
+  for (i=0; i < A1->n; i++)
     for (j=0; j < A2->n; j++)
-      if ((A1->dx[i]==A2->dx[j])&&(A1->dy[i]==A2->dy[j])){	  
+      if ((A1->dx[i]==A2->dx[j])&&(A1->dy[i]==A2->dy[j])){
 	subset[j] = 1;
 	n++;
 	break;
       }
   n = A2->n - n;
-  
-  if (n == 0) /* A1 == A2 */    
+
+  if (n == 0) /* A1 == A2 */
     return(NULL);
 
   A = CreateAdjRel(n);
   j=0;
-  for (i=0; i < A2->n; i++) 
+  for (i=0; i < A2->n; i++)
     if (subset[i] == 0){
       A->dx[j] = A2->dx[i];
       A->dy[j] = A2->dy[i];
@@ -517,7 +543,7 @@ AdjRel *ShearedBox(int xsize, int ysize, float Si, float Sj)
   if (Si > 0) {
     c.x = xsize*(Si+0.5);
   } else {
-    c.x = xsize*(0.5);    
+    c.x = xsize*(0.5);
   }
   if (Sj > 0) {
     c.y = ysize*(Sj+0.5);
@@ -531,7 +557,7 @@ AdjRel *ShearedBox(int xsize, int ysize, float Si, float Sj)
       A->dx[i] = p.x - c.x;
       A->dy[i] = p.y - c.y;
       i++;
-     }	
+     }
   }
   return(A);
 }

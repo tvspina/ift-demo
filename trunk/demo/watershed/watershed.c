@@ -1,3 +1,29 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
 // Watershed from binary marker
@@ -51,7 +77,7 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
       if (ValidPixel(img,v.x,v.y)){
 	q   = v.x + img->tbrow[v.y];
 	if (cost->val[p] < cost->val[q]){
-	  
+
 	  tmp = MAX(cost->val[p] , img->val[q]);
 	  if (tmp < cost->val[q]){
 	    if (cost->val[q]!=INT_MAX)
@@ -66,7 +92,7 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
     }
   }
 
- 
+
   DestroyGQueue(&Q);
   DestroyImage(&cost);
   DestroyAdjRel(&A);
@@ -74,7 +100,7 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
   return(label);
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   Image    *img=NULL,*grad=NULL;
@@ -85,10 +111,10 @@ int main(int argc, char **argv)
   char     *file_noext;
   /*--------------------------------------------------------*/
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
 
@@ -109,20 +135,20 @@ int main(int argc, char **argv)
   file_noext = strtok(argv[1],".");
 
   t1 = Tic();
-  
+
   label = Watershed(grad,Obj,Bkg);
-  
-  t2 = Toc();    
-  
+
+  t2 = Toc();
+
   fprintf(stdout,"Processing time in %f ms\n",CTime(t1,t2));
-  
+
   cimg = DrawLabeledRegions(img,label);
-  sprintf(outfile,"%s_result.ppm",file_noext);  
-  WriteCImage(cimg,outfile);    
-  DestroyImage(&grad);  
-  DestroyImage(&img);  
+  sprintf(outfile,"%s_result.ppm",file_noext);
+  WriteCImage(cimg,outfile);
+  DestroyImage(&grad);
+  DestroyImage(&img);
   DestroyImage(&label);
-  DestroyCImage(&cimg);  
+  DestroyCImage(&cimg);
   DestroySet(&Obj);
   DestroySet(&Bkg);
 
@@ -132,7 +158,7 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
+	   MemDinInicial,MemDinFinal);
 
   return(0);
 }

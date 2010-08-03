@@ -1,3 +1,29 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
 int Gmax;
@@ -29,10 +55,10 @@ void ComputePath(Image *I, Image *V, Image *P, Image *O, GQueue **Q, AdjRel *A, 
 	      right = v.x + I->tbrow[v.y];
 	    else
 	      right = q;
-	    
+
 	    if (O->val[left] <= O->val[right])
 	      tmp = V->val[p]+(int)pow(I->val[q],1.5);
-	    else 
+	    else
 	      tmp = V->val[p]+Gmax;
 
 	    if ((V->val[left] == INT_MIN)&&(V->val[right]==INT_MIN))
@@ -61,11 +87,11 @@ void DisplayPath(Image *img, Image *P, int p, int i, const char* origfile)
   if (P->val[p]!=NIL){
     sprintf(filename,"%s_lwof%03d.ppm",origfile,i);
     cimg = CreateCImage(img->ncols,img->nrows);
-    
+
     for (q=0; q < n; q++) {
       cimg->C[0]->val[q]=img->val[q];
       cimg->C[1]->val[q]=img->val[q];
-      cimg->C[2]->val[q]=img->val[q];  
+      cimg->C[2]->val[q]=img->val[q];
     }
 
     q = p;
@@ -79,7 +105,7 @@ void DisplayPath(Image *img, Image *P, int p, int i, const char* origfile)
   }
 }
 
-/* Code for LiveWireOnTheFly 
+/* Code for LiveWireOnTheFly
 
 V is the cost or connectivity map
 P is the predecessor map
@@ -87,7 +113,7 @@ O is the object membership map
 G is the gradient image
 I is the image to overlay the optimum contour
 
-Actions: 
+Actions:
 
 1 - Select point
 2 - Compute and display optimum segment
@@ -97,7 +123,7 @@ Actions:
 
 */
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   AdjRel *A=NULL,*L=NULL,*R=NULL;
@@ -111,10 +137,10 @@ int main(int argc, char **argv)
 
   /*--------------------------------------------------------*/
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
 
@@ -138,8 +164,8 @@ int main(int argc, char **argv)
 
   n     = I->ncols*I->nrows;
   G     = ReadImage(argv[2]);
-  Gmax  = MaximumValue(G); 
-  for (p=0; p < n; p++) 
+  Gmax  = MaximumValue(G);
+  for (p=0; p < n; p++)
     G->val[p] = Gmax - G->val[p];
   Gmax  = (int)(pow(Gmax,1.5)+0.5);
   O     = ReadImage(argv[3]);
@@ -172,22 +198,22 @@ int main(int argc, char **argv)
     if (V->val[p]!=INT_MIN){
 
       switch(action) {
-  
+
       case 1: // select point p
 
-	
-	if (curr!=NIL){	
+
+	if (curr!=NIL){
 	  DisplayPath(I,P,p,i,file_noext); i++;
 	  ResetGQueue(Q);
 	  // mark selected segment as permanent
 	  q = p;
-	  while(q != P->val[curr]){ V->val[q]=INT_MIN; q = P->val[q];}		
-	} 
-	
+	  while(q != P->val[curr]){ V->val[q]=INT_MIN; q = P->val[q];}
+	}
+
 	curr = p;
-	for(q=0; q < n; q++) // (re)initialize path values	  
+	for(q=0; q < n; q++) // (re)initialize path values
 	  if (V->val[q]!=INT_MIN) V->val[q]=INT_MAX;
-	V->val[curr]=0;	
+	V->val[curr]=0;
 	InsertGQueue(&Q,curr);
 	break;
 
@@ -197,7 +223,7 @@ int main(int argc, char **argv)
 	  DisplayPath(I,P,p,i,file_noext); i++;
 	}
 	break;
-	
+
       case 3: // erase path and display the remaining edges
 	// Find the closest point on contour
 	mindist=INT_MAX; cstpt=-1; q = curr;
@@ -209,15 +235,15 @@ int main(int argc, char **argv)
 	}
 	// Erase path
         q = curr;
-	while (q!=cstpt){ 
+	while (q!=cstpt){
 	  V->val[q]=INT_MAX; q = P->val[q];
 	}
 	// select point cstpt
 	curr = cstpt;
-	ResetGQueue(Q); 
+	ResetGQueue(Q);
 	for(q=0; q < n; q++) // reinitialize path values
 	  if (V->val[q]!=INT_MIN) V->val[q]=INT_MAX;
-	V->val[curr]=0;	
+	V->val[curr]=0;
 	InsertGQueue(&Q,curr);
 	DisplayPath(I,P,curr,i,file_noext);i++;
 	break;
@@ -227,17 +253,17 @@ int main(int argc, char **argv)
 	  ComputePath(G,V,P,O,&Q,A,L,R,p);
 	  ResetGQueue(Q);
 	  q = p;// mark selected segment as permanent
-	  while(q != P->val[curr]){ V->val[q]=INT_MIN; q = P->val[q];}		
+	  while(q != P->val[curr]){ V->val[q]=INT_MIN; q = P->val[q];}
 
 	  curr = p;
-	  for(q=0; q < n; q++)  // reinitialize path values 
+	  for(q=0; q < n; q++)  // reinitialize path values
 	    if (V->val[q]!=INT_MIN) V->val[q]=INT_MAX;
-	  V->val[curr]=0;	
+	  V->val[curr]=0;
 	  InsertGQueue(&Q,curr);
 	  q = curr; p = P->val[q];
 	  while(P->val[p]!=NIL){ // find first contour point
 	    q = p;
-	    p = P->val[p];	
+	    p = P->val[p];
 	  }
 	  P->val[q]=NIL; // new first point
 	  V->val[p]=INT_MAX;
@@ -245,10 +271,10 @@ int main(int argc, char **argv)
 	  DisplayPath(I,P,p,i,file_noext); i++;
 	}
 	quit = 1;
-       
+
 	break;
 
-      case 5: 
+      case 5:
 	quit=1;
 	break;
 
@@ -267,7 +293,7 @@ int main(int argc, char **argv)
 
 
  t2 = Toc();
- 
+
  fprintf(stdout,"lwof in %f ms\n",CTime(t1,t2));
  fclose(fp);
  DestroyGQueue(&Q);
@@ -288,7 +314,7 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
+	   MemDinInicial,MemDinFinal);
 
   return(0);
 }

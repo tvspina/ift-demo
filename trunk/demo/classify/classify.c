@@ -1,6 +1,32 @@
+/*
+    Copyright (C) <2010> <Alexandre Xavier Falcão and Thiago Vallin Spina>
+
+    This file is part of IFT-demo.
+
+    IFT-demo is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IFT-demo is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IFT-demo.  If not, see <http://www.gnu.org/licenses/>.
+
+    please see full copyright in COPYING file.
+    -------------------------------------------------------------------------
+
+    written by A.X. Falcão <afalcao@ic.unicamp.br> and by T.V. Spina
+    <tvspina@liv.ic.unicamp.br>, 2010
+
+*/
+
 #include "ift.h"
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   Image    *label=NULL, *final_label=NULL, *ch_label=NULL;
@@ -13,10 +39,10 @@ int main(int argc, char **argv)
 
   /*--------------------------------------------------------*/
 
-  void *trash = malloc(1);                 
-  struct mallinfo info;   
+  void *trash = malloc(1);
+  struct mallinfo info;
   int MemDinInicial, MemDinFinal;
-  free(trash); 
+  free(trash);
   info = mallinfo();
   MemDinInicial = info.uordblks;
 
@@ -37,12 +63,12 @@ int main(int argc, char **argv)
     Image   *img=NULL;
     img   = ReadImage(argv[1]);
     feat  = GaussImageFeats(img, 2);
-    
-    DestroyImage(&img);  
+
+    DestroyImage(&img);
   }else{
     CImage   *cimg=NULL;
     cimg   = ReadCImage(argv[1]);
-    
+
     Features *gaussfeats   = GaussCImageFeats(cimg, 2);
 
     int p,j;
@@ -68,27 +94,27 @@ int main(int argc, char **argv)
 
   sg = SubgraphFromSeeds(feat,Obj,Bkg);
   SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
-  
+
   t1 = Tic();
-  
+
   /* OPF-based binary classification of the image */
 
   OPFLearning(&sgtrain, &sgeval);
   label = OPFClassifyImage(sgtrain, feat);
-  
+
   //eliminating noise
   ch_label = CloseHoles(label);
   final_label = OpenRec(ch_label,A);
-  
-  t2 = Toc();    
+
+  t2 = Toc();
 
   fprintf(stdout,"Classification and post-processing time in %f ms\n",CTime(t1,t2));
   sprintf(outfile,"%s_label.pgm",strtok(argv[1],"."));
-  WriteImage(final_label,outfile);    
+  WriteImage(final_label,outfile);
 
-  DestroyImage(&label);  
-  DestroyImage(&final_label);  
-  DestroyImage(&ch_label);  
+  DestroyImage(&label);
+  DestroyImage(&final_label);
+  DestroyImage(&ch_label);
   DestroySubgraph(&sg);
   DestroySubgraph(&sgtrain);
   DestroySubgraph(&sgeval);
@@ -103,7 +129,7 @@ int main(int argc, char **argv)
   MemDinFinal = info.uordblks;
   if (MemDinInicial!=MemDinFinal)
     printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);   
+	   MemDinInicial,MemDinFinal);
 
   return(0);
 }
