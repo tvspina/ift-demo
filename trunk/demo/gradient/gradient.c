@@ -93,15 +93,17 @@ DImage *FuzzyOPFClassifyImage(Subgraph *sgtrain, Features *feat)
 	      
 	      if(sgtrain->node[k].label == c)
 		{
+		  // optimization which doesn't evaluate all the graph nodes when computing the optimum path
+		  if(minCost <= sgtrain->node[k].pathval) break;
+
 		  weight = EuclDistLog(feat->elem[i].feat, sgtrain->node[k].feat, sgtrain->nfeats);
 		  tmp  = MAX(sgtrain->node[k].pathval, weight);
 
-		  minCost = MIN(minCost, tmp);
+		  minCost = MIN(minCost,tmp);
 		}
 	      p++;
 	    }
-	  while(p < sgtrain->nnodes - 1 &&
-		minCost > sgtrain->node[sgtrain->ordered_list_of_nodes[k+1]].pathval);
+	  while(p < sgtrain->nnodes);
 
 	  cost[c-1] = minCost;
 	}
