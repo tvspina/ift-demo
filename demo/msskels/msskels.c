@@ -543,6 +543,11 @@ int main(int argc, char **argv)
 
   maxval = MaximumValue(msskel);
 
+  /* It is usually better to treat the external and internal skeletons
+     separately, with different thresholds. The results below are
+     showing both together and using a single threshold, for sake of
+     simplicity. */
+
   skel = Threshold(msskel,(int)(0.05*maxval),maxval);
   sprintf(outfile,"%s_skel-a.pgm",file_noext);
   WriteImage(skel,outfile);

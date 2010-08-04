@@ -74,10 +74,10 @@ DImage  *ReadDImage(char *filename){
     Error(msg,"ReadDImage");
   }
 
-  fscanf(fp,"%d %d\n",&ncols,&nrows);
+  if (fscanf(fp,"%d %d\n",&ncols,&nrows)!=0);
   dimg = CreateDImage(ncols, nrows);
   n = ncols*nrows;
-  fread(dimg->val, sizeof(double), n, fp);
+  if(fread(dimg->val, sizeof(double), n, fp)!=0);
 
   return dimg;
 }

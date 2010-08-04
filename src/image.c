@@ -276,7 +276,6 @@ Image *RemFrame(Image *fimg, int sz)
     return(img);
 }
 
-
 Image *Threshold(Image *img, int lower, int higher)
 {
   Image *bin=NULL;
