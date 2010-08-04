@@ -76,53 +76,50 @@ year = 2010
 // higher the value the closer the similarity to the object)
 DImage *FuzzyOPFClassifyImage(Subgraph *sgtrain, Features *feat)
 {
-	int i, p, k, c;
-	float tmp, weight, minCost;
-	double objcost, bkgcost, cost[2];// cost has cardinality 2 because it holds the minimum costs for the object and background classes
-	DImage *result = CreateDImage(feat->ncols, feat->nrows);
+  int i, p, k, c;
+  float tmp, weight, minCost;
+  double objcost, bkgcost, cost[2];// cost has cardinality 2 because it holds the minimum costs for the object and background classes
+  DImage *result = CreateDImage(feat->ncols, feat->nrows);
 
-	for(i = 0; i < feat->nelems; i++)
+  for(i = 0; i < feat->nelems; i++)
+    {
+      for(c = 1; c <= 2; c++)
 	{
-		for(c = 1; c <= 2; c++)
+	  p = 0;
+	  minCost = FLT_MAX;
+	  do
+	    {
+	      k = sgtrain->ordered_list_of_nodes[p];
+	      
+	      if(sgtrain->node[k].label == c)
 		{
-			p = 0;
-			minCost = FLT_MAX;
-			do
-			{
-				k = sgtrain->ordered_list_of_nodes[p];
+		  weight = EuclDistLog(feat->elem[i].feat, sgtrain->node[k].feat, sgtrain->nfeats);
+		  tmp  = MAX(sgtrain->node[k].pathval, weight);
 
-				while(sgtrain->node[k].label != c)
-				{
-					p++;
-					k = sgtrain->ordered_list_of_nodes[p];
-				}
-
-				weight = EuclDistLog(feat->elem[i].feat, sgtrain->node[k].feat, sgtrain->nfeats);
-				tmp  = MAX(sgtrain->node[k].pathval, weight);
-
-				minCost = MIN(minCost, tmp);
-				p++;
-			}
-			while(p < sgtrain->nnodes - 1 &&
-						minCost > sgtrain->node[sgtrain->ordered_list_of_nodes[k+1]].pathval);
-
-			cost[c-1] = minCost;
+		  minCost = MIN(minCost, tmp);
 		}
+	      p++;
+	    }
+	  while(p < sgtrain->nnodes - 1 &&
+		minCost > sgtrain->node[sgtrain->ordered_list_of_nodes[k+1]].pathval);
 
-		bkgcost = cost[0];
-		objcost = cost[1];
-
-		if((objcost + bkgcost) < 0.00001 || objcost == bkgcost)
-		{
-			result->val[i] = 0.5;
-		}
-		else
-		{
-			result->val[i] = bkgcost / (bkgcost + objcost);
-		}
-
+	  cost[c-1] = minCost;
 	}
-	return result;
+
+      bkgcost = cost[0];
+      objcost = cost[1];
+
+      if((objcost + bkgcost) < 0.00001 || objcost == bkgcost)
+	{
+	  result->val[i] = 0.5;
+	}
+      else
+	{
+	  result->val[i] = bkgcost / (bkgcost + objcost);
+	}
+
+    }
+  return result;
 }
 
 /* Gradient computation */
@@ -308,7 +305,7 @@ int main(int argc, char **argv)
 	t1 = Tic();
 
 	sg = SubgraphFromSeeds(feat, Obj, Bkg);
-	SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
+    SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
 
 	/* supervised fuzzy classification using the Optimum-Path Forest classifier */
 	OPFLearning(&sgtrain, &sgeval);
