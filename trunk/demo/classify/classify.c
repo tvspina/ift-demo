@@ -30,6 +30,8 @@ int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   Image    *label=NULL, *final_label=NULL, *ch_label=NULL;
+  Image    *img=NULL;
+  CImage   *cimg=NULL;
   Features *feat=NULL;
   Subgraph *sg=NULL, *sgtrain=NULL, *sgeval=NULL;
   Set      *Obj=NULL,*Bkg=NULL;
@@ -60,15 +62,11 @@ int main(int argc, char **argv)
 
   if(!strcmp(ext,".pgm"))
   {
-    Image   *img=NULL;
     img   = ReadImage(argv[1]);
     feat  = GaussImageFeats(img, 2);
-
-    DestroyImage(&img);
   }else{
-    CImage   *cimg=NULL;
     cimg   = ReadCImage(argv[1]);
-
+    img    = CopyImage(cimg->C[1]);
     Features *gaussfeats   = GaussCImageFeats(cimg, 2);
 
     int p,j;
@@ -109,10 +107,14 @@ int main(int argc, char **argv)
   t2 = Toc();
 
   fprintf(stdout,"Classification and post-processing time in %f ms\n",CTime(t1,t2));
-  sprintf(outfile,"%s_label.pgm",strtok(argv[1],"."));
-  WriteImage(final_label,outfile);
+
+  cimg = DrawLabeledRegions(img,final_label);
+  sprintf(outfile,"%s_result.ppm",strtok(argv[1],"."));
+  WriteCImage(cimg,outfile);
 
   DestroyImage(&label);
+  DestroyImage(&img);
+  DestroyCImage(&cimg);
   DestroyImage(&final_label);
   DestroyImage(&ch_label);
   DestroySubgraph(&sg);
