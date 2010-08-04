@@ -19,12 +19,41 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Papers related to this program:
+
+@article{Papa09a,
+author = "J.P. Papa and A.X. Falc{\~{a}}o and C.T.N. Suzuki",
+title = "Supervised Pattern Classification based on Optimum-Path
+Forest", 
+journal = "Intl. Journal of Imaging Systems and Technology",
+publisher = "Wiley",
+doi = "10.1002/ima.20188",
+volume = "19",
+number = "2",
+pages = "120--131",
+month = "Jun",
+year = 2009
+}
+
+@inproceedings{Spina09a,
+author = "T.V. Spina and J.A. Montoya-Zegarra and A.X. Falc{\~{a}}o and P.A.V. Miranda",
+title = "Fast interactive segmentation of natural images using the Image Foresting Transform",
+booktitle = "Proc. of the 16th Intl. Conf. on Digital Signal Processing",
+address = "Santorini, Greece",
+publisher = "IEEE",
+doi = "10.1109/ICDSP.2009.5201044",
+year = 2009
+}
+
+*/
+
 
 int main(int argc, char **argv)
 {

@@ -19,12 +19,40 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Papers related to this program:
+
+@article{Falcao00a, 
+ author    = "A.X. Falc{\~{a}}o and J.K. Udupa and F.K. Miyazawa", 
+ title     = "An ultra-fast user-steered image segmentation paradigm:
+{L}ive-wire-on-the-fly",
+ journal   = "IEEE Trans. on Medical Imaging",
+ volume = "19",
+ number = "1",
+ pages = "55--62",
+ month = "Jan",
+ year = 2000
+}
+
+@article{Falcao98,
+author = "A.X. Falc{\~{a}}o and J.K. Udupa and S. Samarasekera and S. Sharma and B.E. Hirsch and R.A. Lotufo",
+title = "User-Steered Image Segmentation Paradigms: Live Wire and Live Lane",
+journal = "Graphical Models and Image Processing",
+publisher = "Academic Press",
+volume = "60", 
+number = "4",
+pages =  "233--260",
+month = "Jul",
+year = 1998
+}
+
+*/
 
 int Gmax;
 

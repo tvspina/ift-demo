@@ -19,12 +19,51 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Papers related to this program:
+
+@incollection{Lotufo00,
+ author    = "R.A. Lotufo and A.X. Falc{\~{a}}o",
+ booktitle = "Mathematical Morphology and its Applications to Image and Signal Processing (ISMM)",
+ title     = "The ordered queue and the optimality of the watershed approaches",
+ publisher = "Kluwer",
+ volume    = "18",
+ month     = "Jun",
+ pages     = "341--350",
+ year      = "2000"
+}
+
+@article{Miranda09b,
+author = "P.A.V. Miranda and A.X. Falc{\~{a}}o",
+title = "Links Between Image Segmentation Based on Optimum-Path Forest and Minimum Cut in Graph",
+journal = "Journal of Mathematical Imaging and Vision",
+pages = {128--142},
+volume = 35,
+number = "2",
+publisher = {Springer},
+month = "Oct",
+year = {2009},
+note = "doi:10.1007/s10851-009-0159-9"
+}
+
+@inproceedings{Audigier07,
+author = "R. Audigier and R.A. Lotufo",
+title = "Watershed by Image Foresting Transform, tie-zone, and theoretical relationship with other watershed definitions",
+booktitle = "Mathematical Morphology and its Applications to Signal and Image Processing (ISMM)",
+address = "Rio de Janeiro, RJ",
+publisher = "MCT/INPE",
+pages = "277--288",
+month = "Oct",
+year = 2007
+}
+
+*/
 
 // Watershed from binary marker
 

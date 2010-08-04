@@ -1,7 +1,24 @@
-Type make to compile the ift1.0 library
+This directory contains the C source code for several image processing
+operators based on the Image Foresting Transform.
+
+@article{Falcao04a,
+author = "A.X. Falc{\~{a}}o and J. Stolfi and R.A. Lotufo",
+title  = "The Image Foresting Transform: {T}heory, Algorithms, and Applications",
+journal = "IEEE Trans. on Pattern Analysis and Machine Intelligence",
+volume = 26,
+number = 1,
+pages = "19--29",
+year = 2004,
+doi = "10.1109/TPAMI.2004.10012"
+}
+
+The implementation of the algorithms are following the lectures of the
+SP-ASC 2010 in www.ic.unicamp.br/~afalcao/talks
+
+Type make to compile the ift-demo library
 
 In demo you will find several subdirectories. Type make followed by
-the basename of the program to compile each program. Example:
+the basename of the program to compile it. Example:
 
 cd demo/watershed
 make watershed
@@ -14,13 +31,12 @@ In this case, the correct usage is
 
 watershed flower.pgm flower_grad.pgm flower-seeds.txt
 
-All directories come with image files and other information, and
-needed, to execute the programs. Enjoy. The algorithms are following
-the lectures in www.ic.unicamp.br/~afalcao/talks
+All directories come with image files and other informations needed to
+execute the programs. 
 
-Enjoy it and do not hesitate to ask me help.
+Enjoy and do not hesitate to ask us for help.
 
-Alexandre Falcao.
+Alexandre Falcão and Thiago Spina.
 
 
 
