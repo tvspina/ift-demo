@@ -42,7 +42,7 @@ year = 2009
 @article{Papa09a,
 author = "J.P. Papa and A.X. Falc{\~{a}}o and C.T.N. Suzuki",
 title = "Supervised Pattern Classification based on Optimum-Path
-Forest", 
+Forest",
 journal = "Intl. Journal of Imaging Systems and Technology",
 publisher = "Wiley",
 doi = "10.1002/ima.20188",
@@ -53,14 +53,14 @@ month = "Jun",
 year = 2009
 }
 
-@article{Miranda10a, 
+@article{Miranda10a,
 author = "P.A.V. Miranda and A.X. Falc{\~{a}}o and J.K. Udupa",
 title  = "Synergistic Arc-Weight Estimation for Interactive Image Segmentation using Graphs",
 journal = "Computer Vision and Image Understanding",
 publisher = "Elsevier",
-doi = "10.1016/j.cviu.2009.08.001", 
-volume = 114, 
-number = 1, 
+doi = "10.1016/j.cviu.2009.08.001",
+volume = 114,
+number = 1,
 pages = "85--99",
 month = "Jan",
 year = 2010
@@ -72,325 +72,57 @@ year = 2010
 
 /* Object map computation */
 
-// Computes the optimum path forest
-// on the graph *sg. For fuzzy classification
-// we have two separate complete graphs, one for the
-// object pixels and another one for the background pixels,
-// therefore this function is called twice (see FuzzyOPFLearning)
-
-void FuzzyOPFTraining(Subgraph *sg)
+// Classification function: returns a fuzzy image with pixel values in [0,1] (where the
+// higher the value the closer the similarity to the object)
+DImage *FuzzyOPFClassifyImage(Subgraph *sgtrain, Features *feat)
 {
-    int p;
-    RealHeap *Q = NULL;
-    float *pathval = NULL;
+	int i, p, k, c;
+	float tmp, weight, minCost;
+	double objcost, bkgcost, cost[2];// cost has cardinality 2 because it holds the minimum costs for the object and background classes
+	DImage *result = CreateDImage(feat->ncols, feat->nrows);
 
-    // initialization
-
-    pathval = AllocFloatArray(sg->nnodes);
-
-    Q=CreateRealHeap(sg->nnodes, pathval);
-
-    for (p = 0; p < sg->nnodes; p++)
-    {
-        if (sg->node[p].status==PROTOTYPE)
-        {
-            pathval[p]         = 0.0;
-            sg->node[p].label  = sg->node[p].truelabel;
-            sg->node[p].pred   = NIL;
-            InsertRealHeap(Q, p);
-        }
-        else  // non-prototypes
-        {
-            pathval[p]  = FLT_MAX;
-        }
-    }
-
-    // IFT with fmax
-
-    int i = 0;
-
-    while ( !IsEmptyRealHeap(Q) )
-    {
-        RemoveRealHeap(Q, &p);
-
-        sg->ordered_list_of_nodes[i]=p;
-        sg->node[p].pathval = pathval[p];
-        i++;
-
-        int q;
-        for (q=0; q < sg->nnodes; q++)
-        {
-            if (p!=q)
-            {
-                if (pathval[p] < pathval[q])
-                {
-                    float weight;
-		    weight = EuclDistLog(sg->node[p].feat,sg->node[q].feat,sg->nfeats);
-
-
-                    float tmp  = MAX(pathval[p],weight);
-                    if ( tmp < pathval[ q ] )
-                    {
-                        sg->node[q].pred  = p;
-                        sg->node[q].label = sg->node[p].label;
-                        UpdateRealHeap(Q, q, tmp);
-                    }
-                }
-            }
-        }
-    }
-
-    DestroyRealHeap( &Q );
-    free( pathval );
-}
-
-
-// Classifies nodes of evaluation/test set
-void FuzzyOPFClassify(Subgraph *sgtrainobj, Subgraph* sgtrainbkg, Subgraph *sg)
-{
-    register int i, j;
-    int objlabel = sgtrainobj->node[0].truelabel;
-    int bkglabel = sgtrainbkg->node[0].truelabel;
-
-    for (i = 0; i < sg->nnodes; i++)
-    {
-        float minCostObj;
-        minCostObj = FLT_MAX;
-        register float weight, cost;
-        for (j = 0; j < sgtrainobj->nnodes; j++)
-        {
-
-            weight = EuclDistLog(sgtrainobj->node[j].feat,sg->node[i].feat,sg->nfeats);
-
-            cost = MAX(sgtrainobj->node[j].pathval, weight);
-
-            if (cost < minCostObj)
-            {
-                minCostObj = cost;
-            }
-        }
-
-        float minCostBkg = FLT_MAX;
-        for (j = 0; j < sgtrainbkg->nnodes; j++)
-        {
-            weight = EuclDistLog(sgtrainbkg->node[j].feat,sg->node[i].feat,sg->nfeats);
-
-            cost = MAX(sgtrainbkg->node[j].pathval, weight);
-
-            if (cost < minCostBkg)
-            {
-                minCostBkg = cost;
-            }
-        }
-
-        if (minCostObj == minCostBkg)
-        {
-            /// Forcing error
-            if (sg->node[i].truelabel == objlabel)
-            {
-                sg->node[i].label = bkglabel;
-            }
-            else
-            {
-                sg->node[i].label = objlabel;
-            }
-        }
-        else
-        {
-            if (minCostObj < minCostBkg)
-            {
-                sg->node[i].label = objlabel;
-            }
-            else
-            {
-                sg->node[i].label = bkglabel;
-            }
-        }
-    }
-}
-
-
-// Executes the OPF learning procedure to replace 
-// misclassified samples in the evaluation set by non prototypes from
-// the training set
-void FuzzyOPFLearning(Subgraph* sg, Subgraph** sgtrainobj, Subgraph** sgtrainbkg, float perc)
-{
-    int i;
-    const int iterations = 5;
-    float Acc,MaxAcc=FLT_MIN;
-    Subgraph *sgtrainobj1 = NULL;
-    Subgraph *sgtrainbkg1 = NULL;
-    Subgraph *sgtrain = NULL, *sgeval = NULL;
-
-    SplitSubgraph(sg,&sgtrain,&sgeval,perc);
-
-    for (i = 1; i <= iterations && MaxAcc != 1.0; i++)
-    {
-        fprintf(stdout, "\nrunning iteration ... %d ", i);
-
-        MSTPrototypes(sgtrain);
-
-        *sgtrainobj = SplitSubgraphByTrueLabel(sgtrain, OPF_OBJ_LABEL);
-        *sgtrainbkg = SplitSubgraphByTrueLabel(sgtrain, OPF_BKG_LABEL);
-
-        FuzzyOPFTraining(*sgtrainobj);
-
-        FuzzyOPFTraining(*sgtrainbkg);
-
-        FuzzyOPFClassify(*sgtrainobj, *sgtrainbkg, sgeval);
-        Acc = Accuracy(sgeval);
-        if (Acc > MaxAcc)
-        {
-            MaxAcc = Acc;
-            if (sgtrainobj1!=NULL) DestroySubgraph(&sgtrainobj1);
-            if (sgtrainbkg1!=NULL) DestroySubgraph(&sgtrainbkg1);
-            sgtrainobj1 = CopySubgraph(*sgtrainobj);
-            sgtrainbkg1 = CopySubgraph(*sgtrainbkg);
-        }
-        SwapErrorsbyNonPrototypes(&sgtrain, &sgeval);
-
-	fprintf(stdout,"Acc: %f\n", Acc);
-
-        DestroySubgraph(sgtrainobj);
-        DestroySubgraph(sgtrainbkg);
-    }
-
-    *sgtrainobj = sgtrainobj1;
-    *sgtrainbkg = sgtrainbkg1;
-
-    fprintf(stderr,"Best accuracy %f\n",MaxAcc);
-
-    DestroySubgraph(&sgeval);
-    DestroySubgraph(&sgtrain);
-}
-
-// Computes the optimum path cost for every pixel in *f
-// from the classifier *sg (object or background forest)
-DImage *FuzzyOPFPathCostMap(Subgraph *sg, Features *f)
-{
-    DImage *pvalmap=CreateDImage(f->ncols,f->nrows);
-
-    register int p,q,n=f->nelems;
-
-    for (q=n; q--;)
-    {
-        register float mincost = FLT_MAX;
-        register int k;
-        p = 0;
-        do
-        {
-            k = sg->ordered_list_of_nodes[p];
-
-	    register float weight = EuclDistLog(f->elem[q].feat,sg->node[k].feat,sg->nfeats);
-	    register float tmp  = MAX(sg->node[k].pathval,weight);
-
-	    if (tmp < mincost)
-	      mincost = tmp;
-	    p++;
-        }
-        while (p < sg->nnodes -1 &&
-                mincost > sg->node[sg->ordered_list_of_nodes[k+1]].pathval);
-
-        pvalmap->val[q] = (double)mincost;
-    }
-    return(pvalmap);
-}
-
-//Classification function: returns a binary image where object pixels have value 1 and background pixels value 0
-DImage* FuzzyOPFClassifyImage(Subgraph *sgtrain, Features* feat)
-{
-  int i, p, k, c;
-  float tmp, weight, minCost;
-  double objcost, bkgcost, cost[2];// cost has cardinality 2 because it holds the minimum costs for the object and background classes
-  DImage* result = CreateDImage(feat->ncols, feat->nrows);
-   
-  for (i = 0; i < feat->nelems; i++)
-    {
-      for(c = 1; c <= 2; c++)
+	for(i = 0; i < feat->nelems; i++)
 	{
-	  p = 0;
-	  minCost = FLT_MAX;
-	  do
-	    {
-	      k = sgtrain->ordered_list_of_nodes[p];
-	      
-	      while(sgtrain->node[k].label != c)
+		for(c = 1; c <= 2; c++)
 		{
-		  p++;
-		  k = sgtrain->ordered_list_of_nodes[p];
+			p = 0;
+			minCost = FLT_MAX;
+			do
+			{
+				k = sgtrain->ordered_list_of_nodes[p];
+
+				while(sgtrain->node[k].label != c)
+				{
+					p++;
+					k = sgtrain->ordered_list_of_nodes[p];
+				}
+
+				weight = EuclDistLog(feat->elem[i].feat, sgtrain->node[k].feat, sgtrain->nfeats);
+				tmp  = MAX(sgtrain->node[k].pathval, weight);
+
+				minCost = MIN(minCost, tmp);
+				p++;
+			}
+			while(p < sgtrain->nnodes - 1 &&
+						minCost > sgtrain->node[sgtrain->ordered_list_of_nodes[k+1]].pathval);
+
+			cost[c-1] = minCost;
 		}
-	      
-	      weight = EuclDistLog(feat->elem[i].feat,sgtrain->node[k].feat,sgtrain->nfeats);
-	      tmp  = MAX(sgtrain->node[k].pathval,weight);
 
-	      minCost = MIN(minCost,tmp);
-	      p++;
-	    }
-	  while (p < sgtrain->nnodes -1 &&
-		 minCost > sgtrain->node[sgtrain->ordered_list_of_nodes[k+1]].pathval);
-	
-	  cost[c-1] = minCost;
+		bkgcost = cost[0];
+		objcost = cost[1];
+
+		if((objcost + bkgcost) < 0.00001 || objcost == bkgcost)
+		{
+			result->val[i] = 0.5;
+		}
+		else
+		{
+			result->val[i] = bkgcost / (bkgcost + objcost);
+		}
+
 	}
-
-      bkgcost = cost[0]; 
-      objcost = cost[1];
-
-      if ((objcost+bkgcost)<0.00001 || objcost == bkgcost)
-        {
-	  result->val[i] = 0.5;
-        }
-      else
-        {
-	  result->val[i] = bkgcost/(bkgcost+objcost);
-        }
-
-    }
-  return result;
-}
-
-// Combines the computed path cost images *d1 and *d2
-// to obtain the final result (d1 == object path cost
-// d2 == background path cost, because we expect that
-// the cost to the background forest of pixels that resemble
-// the object be greater than the cost to the object forest)
-DImage *MembershipMap(DImage *d1, DImage *d2)
-{
-    DImage *map;
-    register int p,n;
-
-    map = CreateDImage(d1->ncols,d1->nrows);
-    n = d1->ncols*d1->nrows;
-    for (p=0; p<n; p++)
-    {
-        register float fd1,fd2;
-
-        fd1 = (float)d1->val[p];
-        fd2 = (float)d2->val[p];
-        if ((fd1+fd2)<0.00001 || fd1 == fd2)
-        {
-            map->val[p] = 0.5;
-        }
-        else
-        {
-            map->val[p] = fd2/(fd2+fd1);
-        }
-    }
-    return map;
-}
-
-// Uses the object and background forests *sgrainobj and *sgtrainbkg, respectively,
-// to compute an object membership map using the set of feature vectors *f
-DImage* FuzzyOPFObjectMembershipMap(Subgraph *sgtrainobj, Subgraph *sgtrainbkg, Features *f)
-{
-  DImage *obj_pv = FuzzyOPFPathCostMap(sgtrainobj, f);
-  DImage *bkg_pv = FuzzyOPFPathCostMap(sgtrainbkg, f);
-
-  DImage* objMap = MembershipMap(obj_pv, bkg_pv);
-
-  DestroyDImage(&obj_pv);
-  DestroyDImage(&bkg_pv);
-
-  return objMap;
+	return result;
 }
 
 /* Gradient computation */
@@ -398,235 +130,236 @@ DImage* FuzzyOPFObjectMembershipMap(Subgraph *sgtrainobj, Subgraph *sgtrainbkg, 
 // Object-based gradient computation
 Image *ObjectGradient(DImage *img, float radius)
 {
-    real    dist,gx,gy;
-    int     i,p,q,n=img->ncols*img->nrows;
-    Pixel   u,v;
-    AdjRel *A=Circular(radius);
-    real   *md=AllocRealArray(A->n);
+	real    dist, gx, gy;
+	int     i, p, q, n = img->ncols * img->nrows;
+	Pixel   u, v;
+	AdjRel *A = Circular(radius);
+	real   *md = AllocRealArray(A->n);
 
-    Image* grad = CreateImage(img->ncols, img->nrows);
+	Image *grad = CreateImage(img->ncols, img->nrows);
 
-    double Imax = MaximumDImageValue(img);
+	double Imax = MaximumDImageValue(img);
 
-    for (i=1; i < A->n; i++)
-        md[i]=sqrt(A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i]);
+	for(i = 1; i < A->n; i++)
+		md[i] = sqrt(A->dx[i] * A->dx[i] + A->dy[i] * A->dy[i]);
 
-    for (p=0; p < n; p++)
-    {
-        u.x = p%img->ncols;
-        u.y = p/img->ncols;
+	for(p = 0; p < n; p++)
+	{
+		u.x = p % img->ncols;
+		u.y = p / img->ncols;
 
-        gx = gy = 0.0;
+		gx = gy = 0.0;
 
-        for (i=1; i < A->n; i++)
-        {
-            v.x = u.x + A->dx[i];
-            v.y = u.y + A->dy[i];
-            if (ValidDImagePixel(img,v.x,v.y))
-            {
-                q    = v.x + img->tbrow[v.y];
-                dist = ((float)img->val[q]-(float)img->val[p])/Imax;
+		for(i = 1; i < A->n; i++)
+		{
+			v.x = u.x + A->dx[i];
+			v.y = u.y + A->dy[i];
+			if(ValidDImagePixel(img, v.x, v.y))
+			{
+				q    = v.x + img->tbrow[v.y];
+				dist = ((float)img->val[q] - (float)img->val[p]) / Imax;
 
-                gx  += dist*A->dx[i]/md[i];
-                gy  += dist*A->dy[i]/md[i];
-            }
-        }
-        grad->val[p]=MAXGRAD*sqrt(gx*gx + gy*gy);
-    }
+				gx  += dist * A->dx[i] / md[i];
+				gy  += dist * A->dy[i] / md[i];
+			}
+		}
+		grad->val[p] = MAXGRAD * sqrt(gx * gx + gy * gy);
+	}
 
-    free(md);
-    DestroyAdjRel(&A);
+	free(md);
+	DestroyAdjRel(&A);
 
-    return(grad);
+	return(grad);
 }
 
 // Image-based gradient computation
-Image *FeaturesGradient(Features *f,float radius)
+Image *FeaturesGradient(Features *f, float radius)
 {
-    real    dist,gx,gy,mag;
-    int     j,i,p,q,n=f->ncols*f->nrows;
-    Pixel   u,v;
-    AdjRel *A=Circular(radius);
-    real   *md=AllocRealArray(A->n);
+	real    dist, gx, gy, mag;
+	int     j, i, p, q, n = f->ncols * f->nrows;
+	Pixel   u, v;
+	AdjRel *A = Circular(radius);
+	real   *md = AllocRealArray(A->n);
 
-    Image* grad = CreateImage(f->ncols, f->nrows);
+	Image *grad = CreateImage(f->ncols, f->nrows);
 
-    for (i=1; i < A->n; i++)
-        md[i]=sqrt(A->dx[i]*A->dx[i]+A->dy[i]*A->dy[i]);
+	for(i = 1; i < A->n; i++)
+		md[i] = sqrt(A->dx[i] * A->dx[i] + A->dy[i] * A->dy[i]);
 
-    for (p=0; p < n; p++)
-    {
-        u.x = p%f->ncols;
-        u.y = p/f->ncols;
+	for(p = 0; p < n; p++)
+	{
+		u.x = p % f->ncols;
+		u.y = p / f->ncols;
 
-        float max_mag = FLT_MIN;
-        for (j=0; j<f->nfeats; j++)
-        {
-            gx = gy = 0.0;
-            for (i=1; i < A->n; i++)
-            {
-                v.x = u.x + A->dx[i];
-                v.y = u.y + A->dy[i];
-                if ((v.x>=0 && v.x<f->ncols) && (v.y>=0 && v.y<f->nrows))
-                {
-                    q    = v.x + v.y*f->ncols;
-                    dist = (f->elem[q].feat[j]-f->elem[p].feat[j]);
-                    gx  += dist*A->dx[i]/md[i];
-                    gy  += dist*A->dy[i]/md[i];
-                }
-            }
-            mag = sqrt(gx*gx + gy*gy);
+		float max_mag = FLT_MIN;
+		for(j = 0; j < f->nfeats; j++)
+		{
+			gx = gy = 0.0;
+			for(i = 1; i < A->n; i++)
+			{
+				v.x = u.x + A->dx[i];
+				v.y = u.y + A->dy[i];
+				if((v.x >= 0 && v.x < f->ncols) && (v.y >= 0 && v.y < f->nrows))
+				{
+					q    = v.x + v.y * f->ncols;
+					dist = (f->elem[q].feat[j] - f->elem[p].feat[j]);
+					gx  += dist * A->dx[i] / md[i];
+					gy  += dist * A->dy[i] / md[i];
+				}
+			}
+			mag = sqrt(gx * gx + gy * gy);
 
-            if (mag > max_mag)
-                max_mag = mag;
-        }
-        grad->val[p] = (int)MAXGRAD*max_mag;
-    }
+			if(mag > max_mag)
+				max_mag = mag;
+		}
+		grad->val[p] = (int)MAXGRAD * max_mag;
+	}
 
-    free(md);
-    DestroyAdjRel(&A);
+	free(md);
+	DestroyAdjRel(&A);
 
-    return(grad);
+	return(grad);
 }
 
 // Linear combination of gradients
-Image* CombineGradients(Image *objgrad, Image *imggrad, float wobj)
+Image *CombineGradients(Image *objgrad, Image *imggrad, float wobj)
 {
-  int p;
-  Image *grad = CreateImage(objgrad->ncols, objgrad->nrows);
+	int p;
+	Image *grad = CreateImage(objgrad->ncols, objgrad->nrows);
 
-  for(p = 0; p < objgrad->ncols*objgrad->nrows; p++)
-    grad->val[p] = wobj*objgrad->val[p] + (1-wobj)*imggrad->val[p];
+	for(p = 0; p < objgrad->ncols * objgrad->nrows; p++)
+		grad->val[p] = wobj * objgrad->val[p] + (1 - wobj) * imggrad->val[p];
 
-  return grad;
+	return grad;
 }
 
 int main(int argc, char **argv)
 {
-  float wobj = 0.5;
-  char outfile[100];
-  char *file_noext;
-  timer    *t1=NULL,*t2=NULL;
-  Image    *objgrad=NULL, *imggrad=NULL, *grad=NULL, *tmp=NULL;
-  Features *feat=NULL;
-  DImage   *objmap=NULL;
-  Subgraph *sg=NULL, *sgtrainobj=NULL, *sgtrainbkg=NULL, *sgeval=NULL, *sgtrain=NULL;
-  Set      *Obj=NULL,*Bkg=NULL;
+	float wobj = 0.5;
+	char outfile[100];
+	char *file_noext;
+	timer    *t1 = NULL, *t2 = NULL;
+	Image    *objgrad = NULL, *imggrad = NULL, *grad = NULL, *tmp = NULL;
+	Features *feat = NULL;
+	DImage   *objmap = NULL;
+	Subgraph *sg = NULL, *sgtrainobj = NULL, *sgtrainbkg = NULL, *sgeval = NULL, *sgtrain = NULL;
+	Set      *Obj = NULL, *Bkg = NULL;
 
 
-  /* The following block must the remarked when using non-linux machines */
+	/* The following block must the remarked when using non-linux machines */
 
-  void *trash = malloc(1);
-  struct mallinfo info;
-  int MemDinInicial, MemDinFinal;
-  free(trash);
-  info = mallinfo();
-  MemDinInicial = info.uordblks;
+	void *trash = malloc(1);
+	struct mallinfo info;
+	int MemDinInicial, MemDinFinal;
+	free(trash);
+	info = mallinfo();
+	MemDinInicial = info.uordblks;
 
-  /*----------------------------------------------------------------------*/
+	/*----------------------------------------------------------------------*/
 
-  if (argc!=4){
-    fprintf(stderr,"Usage: %s <image.pgm (.ppm)>  <seeds.txt> <wobj [0,1]>\n",argv[0]);
-    fprintf(stderr,"image.pgm (.ppm): image to be classified\n");
-    fprintf(stderr,"seeds.txt: seed pixels\n");
-    fprintf(stderr,"wobj: object gradient weight\n");
-    exit(-1);
-  }
+	if(argc != 4)
+	{
+		fprintf(stderr, "Usage: %s <image.pgm (.ppm)>  <seeds.txt> <wobj [0,1]>\n", argv[0]);
+		fprintf(stderr, "image.pgm (.ppm): image to be classified\n");
+		fprintf(stderr, "seeds.txt: seed pixels\n");
+		fprintf(stderr, "wobj: object gradient weight\n");
+		exit(-1);
+	}
 
-  char *ext = strrchr(argv[1],'.');
+	char *ext = strrchr(argv[1], '.');
 
-  if(!strcmp(ext,".pgm"))
-  {
-    Image   *img=NULL;
-    img   = ReadImage(argv[1]);
-    feat  = GaussImageFeats(img, 2);
+	if(!strcmp(ext, ".pgm"))
+	{
+		Image   *img = NULL;
+		img   = ReadImage(argv[1]);
+		feat  = GaussImageFeats(img, 2);
 
-    DestroyImage(&img);
-  }else{
-    CImage   *cimg=NULL;
-    cimg   = ReadCImage(argv[1]);
+		DestroyImage(&img);
+	}
+	else
+	{
+		CImage   *cimg = NULL;
+		cimg   = ReadCImage(argv[1]);
 
-    Features *gaussfeats   = GaussCImageFeats(cimg, 2);
+		Features *gaussfeats   = GaussCImageFeats(cimg, 2);
 
-    int p,j;
-    //converting features from [0,1] to [0,255]
-    for(p = 0; p < gaussfeats->nelems; p++)
-      for(j = 0; j < gaussfeats->nfeats; j++)
-	gaussfeats->elem[p].feat[j] *= gaussfeats->Imax;
+		int p, j;
+		//converting features from [0,1] to [0,255]
+		for(p = 0; p < gaussfeats->nelems; p++)
+			for(j = 0; j < gaussfeats->nfeats; j++)
+				gaussfeats->elem[p].feat[j] *= gaussfeats->Imax;
 
-    feat = LabFeats(gaussfeats);
-    //converting features from [0,255] to [0,1]
-    for(p = 0; p < feat->nelems; p++)
-      for(j = 0; j < feat->nfeats; j++)
-	feat->elem[p].feat[j] /= feat->Imax;
+		feat = LabFeats(gaussfeats);
+		//converting features from [0,255] to [0,1]
+		for(p = 0; p < feat->nelems; p++)
+			for(j = 0; j < feat->nfeats; j++)
+				feat->elem[p].feat[j] /= feat->Imax;
 
-    DestroyCImage(&cimg);
-    DestroyFeatures(&gaussfeats);
-  }
+		DestroyCImage(&cimg);
+		DestroyFeatures(&gaussfeats);
+	}
 
-  file_noext = strtok(argv[1],".");
+	file_noext = strtok(argv[1], ".");
 
-  ReadSeeds(argv[2],&Obj,&Bkg);
+	ReadSeeds(argv[2], &Obj, &Bkg);
 
-  wobj = atof(argv[3]);
+	wobj = atof(argv[3]);
 
-  t1 = Tic();
+	t1 = Tic();
 
-  sg = SubgraphFromSeeds(feat,Obj,Bkg);
-  SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
+	sg = SubgraphFromSeeds(feat, Obj, Bkg);
+	SplitSubgraph(sg, &sgtrain, &sgeval, 0.2);
 
-  /* supervised fuzzy classification using the Optimum-Path Forest classifier */
-  //  FuzzyOPFLearning(sg, &sgtrainobj, &sgtrainbkg, 0.2);
-  //objmap = FuzzyOPFObjectMembershipMap(sgtrainobj, sgtrainbkg, feat);
-  OPFLearning(&sgtrain, &sgeval);
-  objmap = FuzzyOPFClassifyImage(sgtrain, feat);
+	/* supervised fuzzy classification using the Optimum-Path Forest classifier */
+	OPFLearning(&sgtrain, &sgeval);
+	objmap = FuzzyOPFClassifyImage(sgtrain, feat);
 
-  /* computing object gradient */
-  objgrad = ObjectGradient(objmap,1.5);
+	/* computing object gradient */
+	objgrad = ObjectGradient(objmap, 1.5);
 
-  /* computing feature vector gradient */
-  imggrad = FeaturesGradient(feat, 1.5);
+	/* computing feature vector gradient */
+	imggrad = FeaturesGradient(feat, 1.5);
 
-  /* combining gradients */
-  grad = CombineGradients(objgrad, imggrad, wobj);
+	/* combining gradients */
+	grad = CombineGradients(objgrad, imggrad, wobj);
 
-  t2 = Toc();
+	t2 = Toc();
 
-  fprintf(stdout,"Gradient computing in %f ms\n",CTime(t1,t2));
+	fprintf(stdout, "Gradient computing in %f ms\n", CTime(t1, t2));
 
-  tmp = ConvertDImage2Image(objmap);
-  sprintf(outfile,"%s_objmap.pgm",file_noext);
-  WriteImage(tmp,outfile);
-  DestroyImage(&tmp);
+	tmp = ConvertDImage2Image(objmap);
+	sprintf(outfile, "%s_objmap.pgm", file_noext);
+	WriteImage(tmp, outfile);
+	DestroyImage(&tmp);
 
-  sprintf(outfile,"%s_objgrad.pgm",file_noext);
-  WriteImage(objgrad,outfile);
-  sprintf(outfile,"%s_imggrad.pgm",file_noext);
-  WriteImage(imggrad,outfile);
-  sprintf(outfile,"%s_grad.pgm",file_noext);
-  WriteImage(grad,outfile);
+	sprintf(outfile, "%s_objgrad.pgm", file_noext);
+	WriteImage(objgrad, outfile);
+	sprintf(outfile, "%s_imggrad.pgm", file_noext);
+	WriteImage(imggrad, outfile);
+	sprintf(outfile, "%s_grad.pgm", file_noext);
+	WriteImage(grad, outfile);
 
-  DestroyDImage(&objmap);
-  DestroyImage(&imggrad);
-  DestroyImage(&objgrad);
-  DestroyImage(&grad);
-  DestroyFeatures(&feat);
-  DestroySubgraph(&sg);
-  DestroySubgraph(&sgtrain);
-  DestroySubgraph(&sgtrainobj);
-  DestroySubgraph(&sgtrainbkg);
-  DestroySubgraph(&sgeval);
-  DestroySet(&Obj);
-  DestroySet(&Bkg);
+	DestroyDImage(&objmap);
+	DestroyImage(&imggrad);
+	DestroyImage(&objgrad);
+	DestroyImage(&grad);
+	DestroyFeatures(&feat);
+	DestroySubgraph(&sg);
+	DestroySubgraph(&sgtrain);
+	DestroySubgraph(&sgtrainobj);
+	DestroySubgraph(&sgtrainbkg);
+	DestroySubgraph(&sgeval);
+	DestroySet(&Obj);
+	DestroySet(&Bkg);
 
-  /* The following block must the remarked when using non-linux machines */
+	/* The following block must the remarked when using non-linux machines */
 
-  info = mallinfo();
-  MemDinFinal = info.uordblks;
-  if (MemDinInicial!=MemDinFinal)
-    printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
-	   MemDinInicial,MemDinFinal);
+	info = mallinfo();
+	MemDinFinal = info.uordblks;
+	if(MemDinInicial != MemDinFinal)
+		printf("\n\nDinamic memory was not completely deallocated (%d, %d)\n",
+					 MemDinInicial, MemDinFinal);
 
 
-  return(0);
+	return(0);
 }
