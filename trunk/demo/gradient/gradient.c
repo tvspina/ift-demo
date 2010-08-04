@@ -19,12 +19,54 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Papers related to this program:
+
+
+@inproceedings{Spina09a,
+author = "T.V. Spina and J.A. Montoya-Zegarra and A.X. Falc{\~{a}}o and P.A.V. Miranda",
+title = "Fast interactive segmentation of natural images using the Image Foresting Transform",
+booktitle = "Proc. of the 16th Intl. Conf. on Digital Signal Processing",
+address = "Santorini, Greece",
+publisher = "IEEE",
+doi = "10.1109/ICDSP.2009.5201044",
+year = 2009
+}
+
+@article{Papa09a,
+author = "J.P. Papa and A.X. Falc{\~{a}}o and C.T.N. Suzuki",
+title = "Supervised Pattern Classification based on Optimum-Path
+Forest", 
+journal = "Intl. Journal of Imaging Systems and Technology",
+publisher = "Wiley",
+doi = "10.1002/ima.20188",
+volume = "19",
+number = "2",
+pages = "120--131",
+month = "Jun",
+year = 2009
+}
+
+@article{Miranda10a, 
+author = "P.A.V. Miranda and A.X. Falc{\~{a}}o and J.K. Udupa",
+title  = "Synergistic Arc-Weight Estimation for Interactive Image Segmentation using Graphs",
+journal = "Computer Vision and Image Understanding",
+publisher = "Elsevier",
+doi = "10.1016/j.cviu.2009.08.001", 
+volume = 114, 
+number = 1, 
+pages = "85--99",
+month = "Jan",
+year = 2010
+}
+
+*/
 
 #define MAXGRAD 255
 
@@ -34,7 +76,8 @@
 // on the graph *sg. For fuzzy classification
 // we have two separate complete graphs, one for the
 // object pixels and another one for the background pixels,
-// therefore this function os called twice (see FuzzyOPFLearning)
+// therefore this function is called twice (see FuzzyOPFLearning)
+
 void FuzzyOPFTraining(Subgraph *sg)
 {
     int p;
@@ -167,9 +210,9 @@ void FuzzyOPFClassify(Subgraph *sgtrainobj, Subgraph* sgtrainbkg, Subgraph *sg)
 }
 
 
-// Executes the learning procedure for OPF replacing the
-// missclassified samples in the evaluation set by non prototypes from
-// training set
+// Executes the OPF learning procedure to replace 
+// misclassified samples in the evaluation set by non prototypes from
+// the training set
 void FuzzyOPFLearning(Subgraph* sg, Subgraph** sgtrainobj, Subgraph** sgtrainbkg, float perc)
 {
     int i;

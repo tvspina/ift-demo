@@ -19,12 +19,36 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Papers related to this program:
+
+@conference{Lotufo02,
+author     = "R.A. Lotufo and A.X. Falc{\~{a}}o and F. Zampirolli",
+title      = "{IFT}-{W}atershed from Gray-Scale Marker",
+booktitle  = "XV Brazilian Symp. on Computer Graphics and Image Processing (SIBGRAPI)",
+publisher  = "IEEE",
+pages      = "146--152",
+month      = "Oct",
+year       = "2002"
+}
+
+@conference{Falcao01,
+ author    = "A.X. Falc{\~{a}}o and B. S. da Cunha and R. A. Lotufo",
+ booktitle = "SPIE on Medical Imaging",
+ title     = "Design of connected operators using the image foresting transform",
+ volume    = "4322",
+ month     = "Feb",
+ pages     = "468-479",
+ year      = "2001"
+}
+
+*/
 
 // Add value to remove basins with depth less than H
 

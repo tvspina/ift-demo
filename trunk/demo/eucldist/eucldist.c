@@ -19,12 +19,28 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Paper related to this program:
+
+@article{Falcao02,
+author     = "A.X. Falc{\~{a}}o and L.F. Costa and B.S. da Cunha",
+title      = "Multiscale skeletons by image foresting transform and its applications to neuromorphometry",
+journal    = "Pattern Recognition",
+publisher  = "Elsevier ",
+pages      = "1571-1582",
+volume     = "35",
+number     = "7",
+month      = "Apr",
+year       = "2002"
+}
+
+*/
 
 // Creates Empty Forest
 

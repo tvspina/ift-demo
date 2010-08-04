@@ -19,12 +19,26 @@
     please see full copyright in COPYING file.
     -------------------------------------------------------------------------
 
-    written by A.X. Falc√£o <afalcao@ic.unicamp.br> and by T.V. Spina
+    written by A.X. Falc„o <afalcao@ic.unicamp.br> and by T.V. Spina
     <tvspina@liv.ic.unicamp.br>, 2010
 
 */
 
 #include "ift.h"
+
+/* Paper related to this program:
+
+@conference{Falcao01,
+ author    = "A.X. Falc{\~{a}}o and B. S. da Cunha and R. A. Lotufo",
+ booktitle = "SPIE on Medical Imaging",
+ title     = "Design of connected operators using the image foresting transform",
+ volume    = "4322",
+ month     = "Feb",
+ pages     = "468-479",
+ year      = "2001"
+}
+
+*/
 
 int main(int argc, char **argv)
 {
