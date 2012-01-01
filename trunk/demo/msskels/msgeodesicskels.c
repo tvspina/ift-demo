@@ -410,6 +410,132 @@ Image *LambdaContPixel(Image *bin)
   return(lambda);
 }
 
+// Assigs the geodesic length with respect to an arbitrary reference point on the contour
+
+DImage *LambdaGeodesicLength(Image *bin)
+{
+  Image *bndr=NULL;
+  Image *color=NULL,*pred=NULL;
+  DImage *lambda=NULL;
+  int p=0,q,r,i,j,n,left=0,right=0,*LIFO,last;
+  double l;
+  AdjRel *A,*L,*R;
+  Pixel u,v,w;
+
+  A     = Circular(1.0);
+  n     = bin->ncols*bin->nrows;
+  bndr  = CreateImage(bin->ncols,bin->nrows);
+  for (p=0; p < n; p++){
+    if (bin->val[p]==1){
+      u.x = p%bin->ncols;
+      u.y = p/bin->ncols;
+      for (i=1; i < A->n; i++){
+	v.x = u.x + A->dx[i];
+	v.y = u.y + A->dy[i];
+	if (ValidPixel(bin,v.x,v.y)){
+	  q = v.x + bin->tbrow[v.y];
+	  if (bin->val[q]==0){
+	    bndr->val[p]=1;
+	    break;
+	  }
+	} else {
+	    bndr->val[p]=1;
+	    break;
+	}
+      }
+    }
+  }
+  DestroyAdjRel(&A);
+
+  A      = Circular(1.5);
+  L      = LeftSide(A);
+  R      = RightSide(A);
+  lambda = CreateDImage(bndr->ncols,bndr->nrows);
+  color  = CreateImage(bndr->ncols,bndr->nrows);
+  pred   = CreateImage(bndr->ncols,bndr->nrows);
+  n      = bndr->ncols*bndr->nrows;
+  LIFO   = AllocIntArray(n);
+  last   = NIL;
+  for (j=0; j < n; j++){
+    if ((bndr->val[j]==1)
+	&&(color->val[j]!=BLACK)
+	&&ValidContPoint(bin,L,R,j)){
+      last++;
+      LIFO[last]    = j;
+      color->val[j] = GRAY;
+      pred->val[j] = j;
+      while(last != NIL){
+	p = LIFO[last]; last--;
+	color->val[p]=BLACK;
+	u.x = p%bndr->ncols;
+	u.y = p/bndr->ncols;
+	for (i=1; i < A->n; i++){
+	  v.x = u.x + A->dx[i];
+	  v.y = u.y + A->dy[i];
+	  if (ValidPixel(bndr,v.x,v.y)){
+	    q = v.x + bndr->tbrow[v.y];
+	    if ((q==j)&&(pred->val[p]!=j)){
+	      last = NIL;
+	      break;
+	    }
+
+	    w.x = u.x + L->dx[i];
+	    w.y = u.y + L->dy[i];
+	    if (ValidPixel(bndr,w.x,w.y))
+	      left = w.x + bndr->tbrow[w.y];
+	    else
+	      left = -1;
+	    w.x = u.x + R->dx[i];
+	    w.y = u.y + R->dy[i];
+	    if (ValidPixel(bndr,w.x,w.y))
+	      right = w.x + bndr->tbrow[w.y];
+	    else
+	      right = -1;
+
+	    if ((bndr->val[q]==1)&&
+		(color->val[q] != BLACK)&&
+		(((left!=-1)&&(right!=-1)&&(bin->val[left]!=bin->val[right]))||
+		 ((left==-1)&&(right!=-1)&&(bin->val[right]==1)) ||
+		 ((right==-1)&&(left!=-1)&&(bin->val[left]==1)))){
+	      pred->val[q] = p;
+	      if (color->val[q] == WHITE){
+		last++;
+		LIFO[last] = q;
+		color->val[q]=GRAY;
+	      }
+	    }
+	  }
+	}
+      }
+      r = p;
+      l = 1.0;
+      while(pred->val[p]!=p){
+	lambda->val[p] = l;
+	u.x = p%bndr->ncols;
+	u.y = p/bndr->ncols;
+	v.x = pred->val[p]%bndr->ncols;
+	v.y = pred->val[p]/bndr->ncols;
+	l  += sqrt((u.x-v.x)*(u.x-v.x)+(u.y-v.y)*(u.y-v.y));
+	p   = pred->val[p];
+      }
+
+      if (r != p) {
+	lambda->val[p] = l;
+      }
+
+    }
+  }
+
+
+  DestroyAdjRel(&A);
+  DestroyAdjRel(&L);
+  DestroyAdjRel(&R);
+  DestroyImage(&bndr);
+  DestroyImage(&color);
+  DestroyImage(&pred);
+  free(LIFO);
+  return(lambda);
+}
 
 // Computes the perimeter of each contour
 
@@ -439,6 +565,137 @@ Image *Perimeter(Image *bin)
 
   return(perim);
 }
+
+// Computes the geodesic perimeter of each contour
+
+DImage *GeodesicPerimeter(Image *bin)
+{
+  Image *bndr=NULL;
+  Image *color=NULL,*pred=NULL;
+  DImage *perim=NULL;
+  int p=0,q,r,i,j,n,left=0,right=0,*LIFO,last;
+  double l;
+  AdjRel *A,*L,*R;
+  Pixel u,v,w;
+
+  A     = Circular(1.0);
+  n     = bin->ncols*bin->nrows;
+  bndr  = CreateImage(bin->ncols,bin->nrows);
+  for (p=0; p < n; p++){
+    if (bin->val[p]==1){
+      u.x = p%bin->ncols;
+      u.y = p/bin->ncols;
+      for (i=1; i < A->n; i++){
+	v.x = u.x + A->dx[i];
+	v.y = u.y + A->dy[i];
+	if (ValidPixel(bin,v.x,v.y)){
+	  q = v.x + bin->tbrow[v.y];
+	  if (bin->val[q]==0){
+	    bndr->val[p]=1;
+	    break;
+	  }
+	} else {
+	    bndr->val[p]=1;
+	    break;
+	}
+      }
+    }
+  }
+  DestroyAdjRel(&A);
+
+  A      = Circular(1.5);
+  L      = LeftSide(A);
+  R      = RightSide(A);
+  perim  = CreateDImage(bndr->ncols,bndr->nrows);
+  color  = CreateImage(bndr->ncols,bndr->nrows);
+  pred   = CreateImage(bndr->ncols,bndr->nrows);
+  n      = bndr->ncols*bndr->nrows;
+  LIFO   = AllocIntArray(n);
+  last   = NIL;
+  for (j=0; j < n; j++){
+    if ((bndr->val[j]==1)
+	&&(color->val[j]!=BLACK)
+	&&ValidContPoint(bin,L,R,j)){
+      last++;
+      LIFO[last]    = j;
+      color->val[j] = GRAY;
+      pred->val[j] = j;
+      while(last != NIL){
+	p = LIFO[last]; last--;
+	color->val[p]=BLACK;
+	u.x = p%bndr->ncols;
+	u.y = p/bndr->ncols;
+	for (i=1; i < A->n; i++){
+	  v.x = u.x + A->dx[i];
+	  v.y = u.y + A->dy[i];
+	  if (ValidPixel(bndr,v.x,v.y)){
+	    q = v.x + bndr->tbrow[v.y];
+	    if ((q==j)&&(pred->val[p]!=j)){
+	      last = NIL;
+	      break;
+	    }
+
+	    w.x = u.x + L->dx[i];
+	    w.y = u.y + L->dy[i];
+	    if (ValidPixel(bndr,w.x,w.y))
+	      left = w.x + bndr->tbrow[w.y];
+	    else
+	      left = -1;
+	    w.x = u.x + R->dx[i];
+	    w.y = u.y + R->dy[i];
+	    if (ValidPixel(bndr,w.x,w.y))
+	      right = w.x + bndr->tbrow[w.y];
+	    else
+	      right = -1;
+
+	    if ((bndr->val[q]==1)&&
+		(color->val[q] != BLACK)&&
+		(((left!=-1)&&(right!=-1)&&(bin->val[left]!=bin->val[right]))||
+		 ((left==-1)&&(right!=-1)&&(bin->val[right]==1)) ||
+		 ((right==-1)&&(left!=-1)&&(bin->val[left]==1)))){
+	      pred->val[q] = p;
+	      if (color->val[q] == WHITE){
+		last++;
+		LIFO[last] = q;
+		color->val[q]=GRAY;
+	      }
+	    }
+	  }
+	}
+      }
+      r = p;
+      l = 1.0;
+      while(pred->val[p]!=p){
+	u.x = p%bndr->ncols;
+	u.y = p/bndr->ncols;
+	v.x = pred->val[p]%bndr->ncols;
+	v.y = pred->val[p]/bndr->ncols;
+	l  += sqrt((u.x-v.x)*(u.x-v.x)+(u.y-v.y)*(u.y-v.y));
+	p   = pred->val[p];
+      }
+      p = r;
+      r = p;
+      while(pred->val[p]!=p){
+	perim->val[p]=l;
+	p   = pred->val[p];
+      }
+      if (r != p) {
+	perim->val[p] = l;
+      }
+    }
+  }
+
+
+  DestroyAdjRel(&A);
+  DestroyAdjRel(&L);
+  DestroyAdjRel(&R);
+  DestroyImage(&bndr);
+  DestroyImage(&color);
+  DestroyImage(&pred);
+  free(LIFO);
+  return(perim);
+}
+
 
 // Computes multiscale skeletons
 
@@ -511,13 +768,88 @@ Image *MSSkel(Image *I)
   return(msskel);
 }
 
+// Computes multiscale geodesic skeleton
+
+DImage *MSGeodesicSkel(Image *I)
+{
+  int i,p,q,n,maxd1,d1;
+  float maxd2,d2,MaxD;
+  Pixel u,v;
+  Image  *cont=NULL;
+  DImage *label=NULL,*perim=NULL,*msskel=NULL;
+  AdjRel *A;
+  Forest *F=NULL;
+
+  /* Compute MS Skeletons */
+
+  cont   = LambdaContour(I);
+  F      = DistTrans(cont); // Euclidean distance transform of the contours
+  label  = LambdaGeodesicLength(I);
+  n      = I->ncols*I->nrows;
+  perim  = GeodesicPerimeter(I);
+
+  A      = Circular(1.0);
+  msskel = CreateDImage(I->ncols,I->nrows);
+
+
+  MaxD = INT_MIN;
+  for (p=0; p < n; p++) {
+    if (F->R->val[p] != p) { // avoid computation on the contours
+      u.x = p%I->ncols;
+      u.y = p/I->ncols;
+      maxd1 = INT_MIN;
+      maxd2 = INT_MIN;
+      for (i=1; i < A->n; i++){
+	v.x = u.x + A->dx[i];
+	v.y = u.y + A->dy[i];
+	if (ValidPixel(I,v.x,v.y)){
+	  q = v.x + I->tbrow[v.y];
+	  if (cont->val[F->R->val[p]] == cont->val[F->R->val[q]]){
+	    d2   = label->val[F->R->val[q]]-label->val[F->R->val[p]];
+	    if (d2 > (perim->val[F->R->val[p]]-d2)){
+	      d2 = (perim->val[F->R->val[p]]-d2);
+	    }
+	    if (d2 > maxd2){
+	      maxd2 = d2;
+	    }
+	  } else {
+	    d1 = cont->val[F->R->val[q]] - cont->val[F->R->val[p]];
+	    if (d1 > maxd1)
+	      maxd1 = d1;
+	  }
+	}
+      }
+      if (maxd1 > 0) {
+	msskel->val[p] = INT_MAX;
+      } else {
+	msskel->val[p] = MAX(maxd2,0);
+	if (msskel->val[p] > MaxD){
+	  MaxD = msskel->val[p];
+	}
+      }
+    }
+  }
+
+  for (p=0; p < n; p++) { /* Set the SKIZ */
+    if (msskel->val[p] == INT_MAX)
+      msskel->val[p] = MaxD + 1;
+  }
+
+  DestroyImage(&cont);
+  DestroyDImage(&perim);
+  DestroyDImage(&label);
+  DestroyAdjRel(&A);
+  DestroyForest(&F);
+
+  return(msskel);
+}
 
 int main(int argc, char **argv)
 {
   timer    *t1=NULL,*t2=NULL;
   Image    *img,*skel,*aux;
-  Image   *msskel;
-  int      maxval;
+  DImage   *msskel;
+  double maxval;
   char   outfile[100];
   char   *file_noext;
 
@@ -553,38 +885,40 @@ int main(int argc, char **argv)
 
   t1 = Tic();
 
-  msskel=MSSkel(img);
+  msskel=MSGeodesicSkel(img);
   
   t2 = Toc();
 
   fprintf(stdout,"Skeletonization in %f ms\n",CTime(t1,t2));
 
+  aux = ConvertDImage2Image(msskel);
   sprintf(outfile,"%s_msskel.pgm",file_noext);
-  WriteImage(msskel,outfile);
+  WriteImage(aux,outfile);
+  DestroyImage(&aux);
 
-  maxval = MaximumValue(msskel);
+  maxval = MaximumDImageValue(msskel);
 
   /* It is usually better to treat the external and internal skeletons
      separately, with different thresholds. The results below are
      showing both together and using a single threshold, for sake of
      simplicity. */
   
-  skel = Threshold(msskel,(int)(0.05*maxval),maxval);
+  skel = DImageThreshold(msskel,(0.01*maxval),maxval);
   sprintf(outfile,"%s_skel-a.pgm",file_noext);
   WriteImage(skel,outfile);
   DestroyImage(&skel);
 
-  skel = Threshold(msskel,(int)(0.35*maxval),maxval);
+  skel = DImageThreshold(msskel,(0.35*maxval),maxval);
   sprintf(outfile,"%s_skel-b.pgm",file_noext);
   WriteImage(skel,outfile);
   DestroyImage(&skel);
 
-  skel = Threshold(msskel,(int)(0.75*maxval),maxval);
+  skel = DImageThreshold(msskel,(0.75*maxval),maxval);
   sprintf(outfile,"%s_skel-c.pgm",file_noext);
   WriteImage(skel,outfile);
   DestroyImage(&skel);
   
-  DestroyImage(&msskel);
+  DestroyDImage(&msskel);
   DestroyImage(&img);
 
   /* The following block must the remarked when using non-linux machines */

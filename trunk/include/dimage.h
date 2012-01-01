@@ -33,5 +33,6 @@ void    SetDImage(DImage *dimg, double value);
 bool    ValidDImagePixel(DImage *dimg, int x, int y);
 DImage  *CopyDImage(DImage *dimg);
 Image   *ConvertDImage2Image(DImage *dimg);
+Image   *DImageThreshold(DImage *img, double lower, double higher);
 
 #endif

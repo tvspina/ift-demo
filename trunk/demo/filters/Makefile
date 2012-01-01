@@ -10,11 +10,12 @@ INCLUDES= -I$(INC) -I$(OPF_DIR)/include
 FLAGS= -O3 -Wall
 
 $(LIB)/libift.a:
-	cd ../../; make libift; cd -
+	cd ../../; make ; cd -
 
 
  $@.c: $(LIB)/libift.a $@.c 
-	 gcc $(FLAGS) $@.c -o $(BIN)/$@ $(INCLUDES) -L$(LIB) -lift -lm 
+	make
+	gcc $(FLAGS) $@.c -o $(BIN)/$@ $(INCLUDES) -L$(LIB) -lift -lm 
 
 
 
