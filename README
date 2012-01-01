@@ -15,7 +15,10 @@ doi = "10.1109/TPAMI.2004.10012"
 The implementation of the algorithms are following the lectures of the
 SP-ASC 2010 in www.ic.unicamp.br/~afalcao/talks
 
-Type make to compile the ift-demo library
+Type make to compile the ift-demo library:
+
+cd ift-demo
+make
 
 In demo you will find several subdirectories. Type make followed by
 the basename of the program to compile it. Example:

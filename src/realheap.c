@@ -28,7 +28,6 @@
 void SetRemovalPolicyRealHeap(RealHeap *H, char policy){
   if(H->removal_policy != policy){
     H->removal_policy = policy;
-    ResetRealHeap(H);
   }
 }
 

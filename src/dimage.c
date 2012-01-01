@@ -171,9 +171,21 @@ Image *ConvertDImage2Image(DImage *dimg){
   }
 
   for(p=0; p<n; p++){
-    img->val[p] = ROUND(255.0*(dimg->val[p]-min)/(max-min));
+    img->val[p] = ROUND(4095.0*(dimg->val[p]-min)/(max-min));
   }
 
   return img;
 }
 
+Image *DImageThreshold(DImage *img, double lower, double higher)
+{
+  Image *bin=NULL;
+  int p,n;
+
+  bin = CreateImage(img->ncols,img->nrows);
+  n = img->ncols*img->nrows;
+  for (p=0; p < n; p++)
+    if ((img->val[p] >= lower)&&(img->val[p] <= higher))
+      bin->val[p]=1;
+  return(bin);
+}
