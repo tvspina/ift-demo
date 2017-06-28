@@ -71,13 +71,15 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
 {
   AdjRel *A=NULL;
   GQueue *Q=NULL;
-  Image  *cost=NULL,*label=NULL;
+  Image  *cost=NULL,*label=NULL,*pred=NULL,*root=NULL;
   Pixel   u,v;
   int     i,p,q,n,tmp,Cmax=MaximumValue(img);
   Set    *S;
 
   cost  = CreateImage(img->ncols,img->nrows);
   label = CreateImage(img->ncols,img->nrows);
+  pred  = CreateImage(img->ncols,img->nrows);
+  root  = CreateImage(img->ncols,img->nrows);
   n     = img->ncols*img->nrows;
   Q     = CreateGQueue(Cmax+1,n,cost->val);
   A     = Circular(1.5);
@@ -85,7 +87,9 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
   /* Trivial path initialization */
 
   for (p=0; p < n; p++){
-    cost->val[p] =INT_MAX;
+    cost->val[p] = INT_MAX;
+    pred->val[p] = NIL;
+    root->val[p] = p;
   }
   S = Obj;
   while(S != NULL){
@@ -121,8 +125,10 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
 	  if (tmp < cost->val[q]){
 	    if (cost->val[q]!=INT_MAX)
 	      RemoveGQueueElem(Q,q);
-	    cost->val[q] =tmp;
-	    label->val[q]=label->val[p];
+	    pred->val[q]  = p;
+	    cost->val[q]  = tmp;
+	    label->val[q] = label->val[p];
+	    root->val[q]  = root->val[p];
 	    InsertGQueue(&Q,q);
 	  }
 	}
