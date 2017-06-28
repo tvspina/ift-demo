@@ -140,6 +140,9 @@ Image *Watershed(Image *img, Set *Obj, Set *Bkg)
 
   DestroyGQueue(&Q);
   DestroyImage(&cost);
+  DestroyImage(&pred);
+  DestroyImage(&root);
+
   DestroyAdjRel(&A);
 
   return(label);
